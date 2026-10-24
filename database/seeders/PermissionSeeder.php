@@ -1,0 +1,134 @@
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+
+/**
+ * Ensemence les permissions par module et les attribue aux 6 rôles
+ * (tâche 2.11), selon la matrice tranchée le 15 octobre 2026
+ * (CONTEXTE_PROJET_IA.md, section 5.6).
+ *
+ * Convention de nommage : "{module}.{action}", minuscules sans accents.
+ * Actions de base : voir, creer, modifier, supprimer. Actions critiques
+ * spécifiques à un module : devis.envoyer, factures.valider,
+ * tickets_sav.cloturer, pointages.corriger.
+ *
+ * IMPORTANT --- portée des permissions : ce seeder pose des capacités
+ * globales ("peut voir des pointages"), pas un filtrage par ligne
+ * ("seulement SES pointages", "seulement SON équipe"). Ce filtrage fin
+ * est une Policy Laravel distincte, à écrire à la tâche 2.13 et/ou à la
+ * construction réelle de chaque module --- ne pas confondre les deux
+ * niveaux.
+ *
+ * Idempotent (firstOrCreate + syncPermissions) : peut être relancé sans
+ * créer de doublons ni accumuler d'anciennes permissions retirées d'un
+ * rôle entre deux exécutions.
+ */
+class PermissionSeeder extends Seeder
+{
+    /**
+     * @return void
+     */
+    public function run(): void
+    {
+        $modules = [
+            'contacts' => ['voir', 'creer', 'modifier', 'supprimer'],
+            'opportunites' => ['voir', 'creer', 'modifier', 'supprimer'],
+            'devis' => ['voir', 'creer', 'modifier', 'supprimer', 'envoyer'],
+            'bibliotheque_prix' => ['voir', 'creer', 'modifier', 'supprimer'],
+            'chantiers' => ['voir', 'creer', 'modifier', 'supprimer'],
+            'situations_travaux' => ['voir', 'creer', 'modifier', 'supprimer'],
+            'factures' => ['voir', 'creer', 'modifier', 'supprimer', 'valider'],
+            'commandes_fournisseur' => ['voir', 'creer', 'modifier', 'supprimer'],
+            'planning' => ['voir', 'creer', 'modifier', 'supprimer'],
+            'pointages' => ['voir', 'creer', 'modifier', 'supprimer', 'corriger'],
+            'tickets_sav' => ['voir', 'creer', 'modifier', 'supprimer', 'cloturer'],
+            'documents' => ['voir', 'creer', 'modifier', 'supprimer'],
+            'logs' => ['voir'],
+        ];
+
+        foreach ($modules as $module => $actions) {
+            foreach ($actions as $action) {
+                Permission::firstOrCreate([
+                    'name' => "{$module}.{$action}",
+                    'guard_name' => 'web',
+                ]);
+            }
+        }
+
+        $grants = [
+            'Direction' => [
+                'contacts' => ['voir', 'creer', 'modifier', 'supprimer'],
+                'opportunites' => ['voir', 'creer', 'modifier', 'supprimer'],
+                'devis' => ['voir', 'creer', 'modifier', 'supprimer', 'envoyer'],
+                'bibliotheque_prix' => ['voir', 'creer', 'modifier', 'supprimer'],
+                'chantiers' => ['voir', 'creer', 'modifier', 'supprimer'],
+                'situations_travaux' => ['voir', 'creer', 'modifier', 'supprimer'],
+                'factures' => ['voir', 'creer', 'modifier', 'supprimer', 'valider'],
+                'commandes_fournisseur' => ['voir', 'creer', 'modifier', 'supprimer'],
+                'planning' => ['voir', 'creer', 'modifier', 'supprimer'],
+                'pointages' => ['voir', 'creer', 'modifier', 'supprimer', 'corriger'],
+                'tickets_sav' => ['voir', 'creer', 'modifier', 'supprimer', 'cloturer'],
+                'documents' => ['voir', 'creer', 'modifier', 'supprimer'],
+                'logs' => ['voir'],
+            ],
+            'Commercial' => [
+                'contacts' => ['voir', 'creer', 'modifier', 'supprimer'],
+                'opportunites' => ['voir', 'creer', 'modifier', 'supprimer'],
+                'devis' => ['voir', 'creer', 'modifier', 'supprimer', 'envoyer'],
+                'bibliotheque_prix' => ['voir'],
+                'chantiers' => ['voir'],
+                'planning' => ['voir'],
+                'tickets_sav' => ['voir', 'creer'],
+                'documents' => ['voir'],
+            ],
+            'Conducteur travaux' => [
+                'contacts' => ['voir'],
+                'opportunites' => ['voir'],
+                'devis' => ['voir'],
+                'chantiers' => ['voir', 'creer', 'modifier', 'supprimer'],
+                'situations_travaux' => ['voir', 'creer', 'modifier', 'supprimer'],
+                'factures' => ['voir'],
+                'commandes_fournisseur' => ['voir', 'creer', 'modifier', 'supprimer'],
+                'planning' => ['voir', 'creer', 'modifier', 'supprimer'],
+                'pointages' => ['voir'],
+                'tickets_sav' => ['voir', 'creer', 'modifier', 'supprimer', 'cloturer'],
+                'documents' => ['voir', 'creer', 'modifier'],
+            ],
+            'Administratif' => [
+                'contacts' => ['voir'],
+                'devis' => ['voir'],
+                'chantiers' => ['voir'],
+                'situations_travaux' => ['voir'],
+                'factures' => ['voir', 'creer', 'modifier', 'supprimer', 'valider'],
+                'commandes_fournisseur' => ['voir'],
+                'planning' => ['voir'],
+                'documents' => ['voir', 'creer', 'modifier'],
+            ],
+            'Salarié terrain' => [
+                'planning' => ['voir'],
+                'pointages' => ['voir', 'creer'],
+                'documents' => ['creer'],
+            ],
+            'Ressources Humaines' => [
+                'pointages' => ['voir', 'creer', 'corriger'],
+            ],
+        ];
+
+        foreach ($grants as $roleName => $modulePermissions) {
+            $role = Role::where('name', $roleName)->where('guard_name', 'web')->first();
+
+            $permissionNames = [];
+            foreach ($modulePermissions as $module => $actions) {
+                foreach ($actions as $action) {
+                    $permissionNames[] = "{$module}.{$action}";
+                }
+            }
+
+            $role->syncPermissions($permissionNames);
+        }
+    }
+}
