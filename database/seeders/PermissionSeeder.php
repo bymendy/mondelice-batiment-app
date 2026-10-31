@@ -48,6 +48,7 @@ class PermissionSeeder extends Seeder
             'tickets_sav' => ['voir', 'creer', 'modifier', 'supprimer', 'cloturer'],
             'documents' => ['voir', 'creer', 'modifier', 'supprimer'],
             'logs' => ['voir'],
+            'parametres' => ['gerer'],
         ];
 
         foreach ($modules as $module => $actions) {
@@ -74,12 +75,13 @@ class PermissionSeeder extends Seeder
                 'tickets_sav' => ['voir', 'creer', 'modifier', 'supprimer', 'cloturer'],
                 'documents' => ['voir', 'creer', 'modifier', 'supprimer'],
                 'logs' => ['voir'],
+                'parametres' => ['gerer'],
             ],
             'Commercial' => [
                 'contacts' => ['voir', 'creer', 'modifier', 'supprimer'],
                 'opportunites' => ['voir', 'creer', 'modifier', 'supprimer'],
                 'devis' => ['voir', 'creer', 'modifier', 'supprimer', 'envoyer'],
-                'bibliotheque_prix' => ['voir'],
+                'bibliotheque_prix' => ['voir', 'creer', 'modifier'], // archivage reserve a Direction/Administratif ; verrouillable, voir BibliothequePrixModifiable
                 'chantiers' => ['voir'],
                 'planning' => ['voir'],
                 'tickets_sav' => ['voir', 'creer'],
@@ -99,6 +101,8 @@ class PermissionSeeder extends Seeder
                 'documents' => ['voir', 'creer', 'modifier'],
             ],
             'Administratif' => [
+                'bibliotheque_prix' => ['voir', 'creer', 'modifier', 'supprimer'],
+                'parametres' => ['gerer'],
                 'contacts' => ['voir'],
                 'devis' => ['voir'],
                 'chantiers' => ['voir'],
