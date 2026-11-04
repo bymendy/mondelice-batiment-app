@@ -46,12 +46,13 @@ class RolePermissionMatrixTest extends TestCase
             'tickets_sav.voir', 'tickets_sav.creer', 'tickets_sav.modifier', 'tickets_sav.supprimer', 'tickets_sav.cloturer',
             'documents.voir', 'documents.creer', 'documents.modifier', 'documents.supprimer',
             'logs.voir',
+            'parametres.gerer',
         ],
         'Commercial' => [
             'contacts.voir', 'contacts.creer', 'contacts.modifier', 'contacts.supprimer',
             'opportunites.voir', 'opportunites.creer', 'opportunites.modifier', 'opportunites.supprimer',
             'devis.voir', 'devis.creer', 'devis.modifier', 'devis.supprimer', 'devis.envoyer',
-            'bibliotheque_prix.voir',
+            'bibliotheque_prix.voir', 'bibliotheque_prix.creer', 'bibliotheque_prix.modifier',
             'chantiers.voir',
             'planning.voir',
             'tickets_sav.voir', 'tickets_sav.creer',
@@ -72,6 +73,8 @@ class RolePermissionMatrixTest extends TestCase
             'contacts.voir', 'devis.voir', 'chantiers.voir', 'situations_travaux.voir',
             'factures.voir', 'factures.creer', 'factures.modifier', 'factures.supprimer', 'factures.valider',
             'commandes_fournisseur.voir',
+            'bibliotheque_prix.voir', 'bibliotheque_prix.creer', 'bibliotheque_prix.modifier', 'bibliotheque_prix.supprimer',
+            'parametres.gerer',
             'planning.voir',
             'documents.voir', 'documents.creer', 'documents.modifier',
         ],
@@ -145,7 +148,7 @@ class RolePermissionMatrixTest extends TestCase
     }
 
     /**
-     * Vérifie que le total des permissions en base (53) correspond à
+     * Vérifie que le total des permissions en base (54) correspond à
      * l'union de toutes les permissions listées dans la matrice --- garde
      * contre une permission orpheline créée par erreur et non attribuée
      * à aucun rôle (invisible aux deux tests précédents).
@@ -158,7 +161,7 @@ class RolePermissionMatrixTest extends TestCase
             ->sort()
             ->values();
 
-        $this->assertEquals(53, $unionFromMatrix->count());
-        $this->assertEquals(53, \Spatie\Permission\Models\Permission::count());
+        $this->assertEquals(54, $unionFromMatrix->count());
+        $this->assertEquals(54, \Spatie\Permission\Models\Permission::count());
     }
 }

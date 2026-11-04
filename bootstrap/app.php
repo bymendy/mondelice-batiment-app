@@ -65,6 +65,22 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         /**
+         * Ordre d'execution : le tenant doit etre identifie AVANT que Laravel
+         * charge les modeles lies a l'URL (SubstituteBindings, ex.
+         * /api/contacts/{contact}). Sans cela, le chargement se fait sans
+         * filtre d'entreprise et une entreprise peut lire, modifier ou
+         * supprimer l'enregistrement d'une autre en connaissant son identifiant.
+         *
+         * Dans la liste de priorite de Laravel, SubstituteBindings passe
+         * apres l'authentification : le tenant est donc identifie apres
+         * l'authentification et avant le chargement des modeles.
+         */
+        $middleware->prependToPriorityList(
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            \App\Http\Middleware\IdentifyTenantByUser::class,
+        );
+
+        /**
          * Alias des middlewares de Spatie Permission (tâche 2.13), pour
          * pouvoir écrire ->middleware('permission:contacts.voir') ou
          * ->middleware('role:Direction') sur les futures routes métier
