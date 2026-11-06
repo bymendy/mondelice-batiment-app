@@ -8,12 +8,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Un devis, rattaché à un client et, le cas échéant, à une opportunité.
+ * Un devis, rattache a un contact et, le cas echeant, a une opportunite.
  *
- * Les montants totaux (total_ht, total_vat, total_ttc) sont calculés à
- * partir des lignes (QuoteLine) et stockés ici pour éviter un recalcul
- * à chaque affichage — à régénérer explicitement à chaque modification
- * d'une ligne (logique à implémenter en Phase 3 avec le moteur event/trigger).
+ * Les montants totaux (total_ht, total_vat, total_ttc) sont calcules a
+ * partir des lignes (QuoteLine) et stockes ici pour eviter un recalcul
+ * a chaque affichage. Table reprise de la Phase 1, a reformer a la
+ * tache 3.6 (renommage en `devis`, machine a etats).
  */
 class Quote extends Model
 {
@@ -23,7 +23,7 @@ class Quote extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'client_id',
+        'contact_id',
         'opportunity_id',
         'quote_number',
         'status',
@@ -37,11 +37,13 @@ class Quote extends Model
     ];
 
     /**
-     * @return BelongsTo<Client, Quote>
+     * Le contact destinataire du devis (meme archive).
+     *
+     * @return BelongsTo<Contact, Quote>
      */
-    public function client(): BelongsTo
+    public function contact(): BelongsTo
     {
-        return $this->belongsTo(Client::class);
+        return $this->belongsTo(Contact::class)->withTrashed();
     }
 
     /**

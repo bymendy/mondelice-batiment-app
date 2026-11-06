@@ -7,8 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Une ligne de devis : désignation, quantité, prix unitaire et TVA, copiés
- * depuis la bibliothèque de prix au moment de la création (figés ensuite).
+ * Une ligne de devis : designation, quantite, prix unitaire et TVA, copies
+ * depuis la bibliotheque de prix a la creation (figes ensuite : le prix signe
+ * ne change pas si le catalogue evolue).
  */
 class QuoteLine extends Model
 {
@@ -19,7 +20,7 @@ class QuoteLine extends Model
      */
     protected $fillable = [
         'quote_id',
-        'price_library_item_id',
+        'article_prix_id',
         'designation',
         'unit',
         'quantity',
@@ -37,10 +38,12 @@ class QuoteLine extends Model
     }
 
     /**
-     * @return BelongsTo<PriceLibraryItem, QuoteLine>
+     * L'article de la bibliotheque dont la ligne est issue (meme archive).
+     *
+     * @return BelongsTo<ArticlePrix, QuoteLine>
      */
-    public function priceLibraryItem(): BelongsTo
+    public function articlePrix(): BelongsTo
     {
-        return $this->belongsTo(PriceLibraryItem::class);
+        return $this->belongsTo(ArticlePrix::class)->withTrashed();
     }
 }

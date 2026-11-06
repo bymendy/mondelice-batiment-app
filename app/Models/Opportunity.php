@@ -7,11 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Une opportunité commerciale (lead), rattachée à un client.
+ * Une opportunite commerciale (lead), rattachee a un contact.
  *
- * Précède le devis dans le cheminement commercial (voir statuts en
- * commentaire de la migration). Une fois le devis créé, l'opportunité
- * reste tracée mais le pilotage se poursuit via l'entité Devis.
+ * Precede le devis dans le cheminement commercial. Une fois le devis cree,
+ * l'opportunite reste tracee mais le pilotage se poursuit via l'entite Devis.
+ * Table reprise de la Phase 1, a reformer a la tache 3.5 (statuts, noms).
  */
 class Opportunity extends Model
 {
@@ -21,7 +21,7 @@ class Opportunity extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'client_id',
+        'contact_id',
         'status',
         'source',
         'estimated_amount',
@@ -30,12 +30,12 @@ class Opportunity extends Model
     ];
 
     /**
-     * Le client à l'origine de cette opportunité.
+     * Le contact a l'origine de cette opportunite (meme archive).
      *
-     * @return BelongsTo<Client, Opportunity>
+     * @return BelongsTo<Contact, Opportunity>
      */
-    public function client(): BelongsTo
+    public function contact(): BelongsTo
     {
-        return $this->belongsTo(Client::class);
+        return $this->belongsTo(Contact::class)->withTrashed();
     }
 }
