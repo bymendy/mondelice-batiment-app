@@ -47,9 +47,12 @@ trait InteractsWithTenants
      *
      * @param Tenant $entreprise Entreprise de l'utilisateur.
      * @param string $role Nom exact du role (ex. "Commercial").
+     * @param bool $avecMfa true (defaut) : le MFA est marque comme actif, ce qui
+     *        permet aux roles qui l'exigent (Direction, Administratif, RH) de
+     *        passer le middleware require.mfa ; false pour tester le blocage.
      * @return User
      */
-    protected function creerUtilisateur(Tenant $entreprise, string $role): User
+    protected function creerUtilisateur(Tenant $entreprise, string $role, bool $avecMfa = true): User
     {
         $utilisateur = new User([
             'name' => 'Test ' . $role,
@@ -57,6 +60,10 @@ trait InteractsWithTenants
             'password' => 'MotDePasse123!',
         ]);
         $utilisateur->tenant_id = $entreprise->getTenantKey();
+        if ($avecMfa) {
+            // two_factor_confirmed_at est la source de verite du statut "MFA actif".
+            $utilisateur->forceFill(['two_factor_confirmed_at' => now()]);
+        }
         $utilisateur->save();
         $utilisateur->assignRole($role);
 

@@ -81,7 +81,7 @@ Route::post('/2fa/login-verify', [\App\Http\Controllers\Auth\TwoFactorController
  * tenant (filtrage tenant_id automatique via BelongsToTenant, voir
  * app/Models/ArticlePrix.php) -- pas de filtrage par utilisateur.
  */
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
     Route::apiResource('bibliotheque-prix', \App\Http\Controllers\ArticlePrixController::class)
         ->parameters(['bibliotheque-prix' => 'articlePrix']);
 });
@@ -91,7 +91,7 @@ Route::middleware('auth:sanctum')->group(function () {
  * permissions (contacts.*) sont appliquees par le controleur lui-meme
  * (interface HasMiddleware), pas ici.
  */
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
     Route::apiResource('contacts', \App\Http\Controllers\ContactController::class);
 });
 
@@ -99,7 +99,7 @@ Route::middleware('auth:sanctum')->group(function () {
  * Reglages de l'entreprise (tache 3.4 bis). Permission parametres.gerer
  * appliquee par le controleur (HasMiddleware).
  */
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
     Route::get('parametres', [\App\Http\Controllers\ParametreController::class, 'index']);
     Route::put('parametres/{cle}', [\App\Http\Controllers\ParametreController::class, 'update']);
 });
