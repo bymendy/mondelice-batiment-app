@@ -56,4 +56,15 @@ class Activity extends SpatieActivity
             "Le journal d'actions est en écriture seule (append-only) : une entrée ne peut jamais être supprimée, y compris par le compte admin système."
         );
     }
+
+    /**
+     * Exempte du refus par defaut du trait BelongsToTenant : ce modele doit
+     * pouvoir etre lu avant l'identification de l'entreprise (le journal est ecrit et lu pendant la connexion).
+     *
+     * @return bool
+     */
+    public static function filtreTenantStrict(): bool
+    {
+        return false;
+    }
 }

@@ -75,4 +75,15 @@ class User extends Authenticatable
     {
         return $this->hasAnyRole(['Direction', 'Administratif', 'Ressources Humaines']);
     }
+
+    /**
+     * Exempte du refus par defaut du trait BelongsToTenant : ce modele doit
+     * pouvoir etre lu avant l'identification de l'entreprise (l'utilisateur est charge pour s'authentifier, donc avant que son entreprise soit connue).
+     *
+     * @return bool
+     */
+    public static function filtreTenantStrict(): bool
+    {
+        return false;
+    }
 }
