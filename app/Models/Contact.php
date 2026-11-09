@@ -2,32 +2,28 @@
 
 namespace App\Models;
 
-use App\Enums\SourceLead;
-use App\Enums\TypeContact;
 use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * Contact / Client (tache 3.4) : racine du modele de donnees.
+ * Contact : une personne a joindre, rattachee a un ou plusieurs clients
+ * par la table pivot client_contact (gardien d'un syndic, comptable d'une
+ * entreprise, conjoint d'un particulier...).
  *
- * tenant_id est gere automatiquement par BelongsToTenant (jamais dans
- * $fillable). Suppression douce : un contact deja reference par un devis
- * ou un chantier ne doit jamais disparaitre physiquement.
+ * Le droit d'opposition a la prospection est personnel : il est porte par
+ * le contact (ne_plus_demarcher_le), independamment de la fiche client.
  *
- * @property TypeContact $type
- * @property string|null $nom
+ * @property string|null $civilite
  * @property string|null $prenom
- * @property string|null $raison_sociale
- * @property string|null $siret
- * @property string|null $adresse
- * @property string|null $code_postal
- * @property string|null $ville
- * @property string|null $telephone
+ * @property string $nom
  * @property string|null $email
- * @property SourceLead|null $source_lead
- * @property string|null $notes
+ * @property string|null $telephone
+ * @property string|null $mobile
+ * @property string|null $preference_contact
+ * @property \Illuminate\Support\Carbon|null $ne_plus_demarcher_le
  */
 class Contact extends Model
 {
@@ -38,38 +34,38 @@ class Contact extends Model
     protected $table = 'contacts';
 
     protected $fillable = [
-        'type',
-        'nom',
+        'civilite',
         'prenom',
-        'raison_sociale',
-        'siret',
-        'adresse',
-        'code_postal',
-        'ville',
-        'telephone',
+        'nom',
         'email',
-        'source_lead',
-        'notes',
+        'telephone',
+        'mobile',
+        'preference_contact',
+        'ne_plus_demarcher_le',
     ];
 
     protected $casts = [
-        'type' => TypeContact::class,
-        'source_lead' => SourceLead::class,
+        'ne_plus_demarcher_le' => 'date',
     ];
 
     /**
-     * Nom a afficher partout (liste, devis, chantier) : raison sociale
-     * pour un professionnel, "NOM Prenom" pour un particulier. Calcule a
-     * la volee, jamais stocke.
+     * Nom a afficher : "Prenom NOM".
      *
      * @return string
      */
     public function nomAffiche(): string
     {
-        if ($this->type === TypeContact::Professionnel) {
-            return (string) $this->raison_sociale;
-        }
+        return trim((string) $this->prenom . ' ' . mb_strtoupper((string) $this->nom));
+    }
 
-        return trim(mb_strtoupper((string) $this->nom) . ' ' . $this->prenom);
+    /**
+     * Les clients auxquels ce contact est rattache.
+     *
+     * @return BelongsToMany<Client, Contact>
+     */
+    public function clients(): BelongsToMany
+    {
+        return $this->belongsToMany(Client::class, 'client_contact')
+            ->withPivot(['role', 'principal']);
     }
 }

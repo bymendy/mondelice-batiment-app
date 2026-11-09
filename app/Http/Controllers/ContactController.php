@@ -11,11 +11,9 @@ use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 
 /**
- * CRUD Contact / Client (tache 3.4).
+ * CRUD des contacts (personnes a joindre) du module Clients / CRM.
  *
- * Autorisation par permissions Spatie (posees en Phase 2) via le
- * middleware natif "can:" : Direction et Commercial ecrivent, les autres
- * roles n'ont pas acces en ecriture.
+ * Autorisation par permissions Spatie via le middleware natif "can:".
  */
 class ContactController extends Controller implements HasMiddleware
 {
@@ -38,9 +36,8 @@ class ContactController extends Controller implements HasMiddleware
      * Liste paginee des contacts du tenant courant.
      *
      * Query params :
-     *  - type=particulier|professionnel
-     *  - source_lead=...
-     *  - recherche=...  sur nom, prenom, raison sociale, email, telephone, ville
+     *  - client_id=...  contacts rattaches a ce client
+     *  - recherche=...  sur nom, prenom, email, telephone, mobile
      *  - par_page=...   taille de page (defaut 25)
      *
      * @param Request $request
@@ -50,12 +47,9 @@ class ContactController extends Controller implements HasMiddleware
     {
         $query = Contact::query();
 
-        if ($request->filled('type')) {
-            $query->where('type', $request->string('type'));
-        }
-
-        if ($request->filled('source_lead')) {
-            $query->where('source_lead', $request->string('source_lead'));
+        if ($request->filled('client_id')) {
+            $clientId = $request->integer('client_id');
+            $query->whereHas('clients', fn ($q) => $q->whereKey($clientId));
         }
 
         if ($request->filled('recherche')) {
@@ -63,15 +57,14 @@ class ContactController extends Controller implements HasMiddleware
             $query->where(function ($q) use ($terme): void {
                 $q->where('nom', 'ilike', "%{$terme}%")
                     ->orWhere('prenom', 'ilike', "%{$terme}%")
-                    ->orWhere('raison_sociale', 'ilike', "%{$terme}%")
                     ->orWhere('email', 'ilike', "%{$terme}%")
                     ->orWhere('telephone', 'ilike', "%{$terme}%")
-                    ->orWhere('ville', 'ilike', "%{$terme}%");
+                    ->orWhere('mobile', 'ilike', "%{$terme}%");
             });
         }
 
         return response()->json(
-            $query->orderBy('nom')->orderBy('raison_sociale')->paginate($request->integer('par_page', 25))
+            $query->orderBy('nom')->orderBy('prenom')->paginate($request->integer('par_page', 25))
         );
     }
 
@@ -87,14 +80,14 @@ class ContactController extends Controller implements HasMiddleware
     }
 
     /**
-     * Affiche un contact.
+     * Affiche un contact avec ses clients.
      *
      * @param Contact $contact
      * @return JsonResponse
      */
     public function show(Contact $contact): JsonResponse
     {
-        return response()->json($contact);
+        return response()->json($contact->load('clients'));
     }
 
     /**
@@ -112,8 +105,8 @@ class ContactController extends Controller implements HasMiddleware
     }
 
     /**
-     * Archive le contact (suppression douce) : jamais de suppression
-     * physique, un devis ou un chantier peut le referencer.
+     * Archive le contact (suppression douce). Ses rattachements aux clients
+     * sont conserves tant que la fiche n'est pas anonymisee.
      *
      * @param Contact $contact
      * @return JsonResponse

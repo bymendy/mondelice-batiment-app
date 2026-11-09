@@ -2,19 +2,19 @@
 
 namespace Tests\Feature;
 
-use App\Models\Contact;
+use App\Models\Client;
 use App\Models\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\InteractsWithTenants;
 use Tests\TestCase;
 
 /**
- * Acces et isolation du module Contact/Client (tache 3.4) : refus sans
+ * Acces et isolation du module Client (tache 3.4) : refus sans
  * connexion, refus sans permission, et surtout isolation entre entreprises
  * (une entreprise ne voit, ne modifie et ne supprime jamais les contacts
  * d'une autre).
  */
-class ContactAccesTest extends TestCase
+class ClientAccesTest extends TestCase
 {
     use RefreshDatabase;
     use InteractsWithTenants;
@@ -30,22 +30,22 @@ class ContactAccesTest extends TestCase
 
     public function test_un_visiteur_non_connecte_est_refuse(): void
     {
-        $this->getJson('/api/contacts')->assertUnauthorized();
+        $this->getJson('/api/clients')->assertUnauthorized();
     }
 
     public function test_un_role_sans_permission_est_refuse(): void
     {
         $terrain = $this->creerUtilisateur($this->entreprise, 'Salarié terrain');
-        $this->agirEn($terrain)->getJson('/api/contacts')->assertForbidden();
+        $this->agirEn($terrain)->getJson('/api/clients')->assertForbidden();
 
         $conducteur = $this->creerUtilisateur($this->entreprise, 'Conducteur travaux');
         $this->agirEn($conducteur)
-            ->postJson('/api/contacts', ['type' => 'particulier', 'nom' => 'Dupont'])
+            ->postJson('/api/clients', ['type' => 'particulier', 'nom' => 'Dupont'])
             ->assertForbidden();
 
         $administratif = $this->creerUtilisateur($this->entreprise, 'Administratif');
         $this->agirEn($administratif)
-            ->postJson('/api/contacts', ['type' => 'particulier', 'nom' => 'Dupont'])
+            ->postJson('/api/clients', ['type' => 'particulier', 'nom' => 'Dupont'])
             ->assertForbidden();
     }
 
@@ -54,7 +54,7 @@ class ContactAccesTest extends TestCase
         $commercial = $this->creerUtilisateur($this->entreprise, 'Commercial');
 
         $this->agirEn($commercial)
-            ->postJson('/api/contacts', ['type' => 'particulier', 'nom' => 'Dupont'])
+            ->postJson('/api/clients', ['type' => 'particulier', 'nom' => 'Dupont'])
             ->assertCreated();
     }
 
@@ -64,13 +64,13 @@ class ContactAccesTest extends TestCase
 
         $contact = $this->dansEntreprise(
             $this->entreprise,
-            fn () => Contact::create(['type' => 'particulier', 'nom' => 'Dupont'])
+            fn () => Client::create(['type' => 'particulier', 'nom' => 'Dupont'])
         );
 
         // Temoin : l'entreprise proprietaire voit bien son contact.
         $proprietaire = $this->creerUtilisateur($this->entreprise, 'Direction');
         $this->agirEn($proprietaire)
-            ->getJson('/api/contacts')
+            ->getJson('/api/clients')
             ->assertOk()
             ->assertJsonCount(1, 'data');
 
@@ -78,17 +78,17 @@ class ContactAccesTest extends TestCase
         $intrus = $this->creerUtilisateur($autreEntreprise, 'Direction');
 
         $this->agirEn($intrus)
-            ->getJson('/api/contacts')
+            ->getJson('/api/clients')
             ->assertOk()
             ->assertJsonCount(0, 'data');
 
-        $this->agirEn($intrus)->getJson('/api/contacts/' . $contact->id)->assertNotFound();
+        $this->agirEn($intrus)->getJson('/api/clients/' . $contact->id)->assertNotFound();
         $this->agirEn($intrus)
-            ->putJson('/api/contacts/' . $contact->id, ['nom' => 'Pirate'])
+            ->putJson('/api/clients/' . $contact->id, ['nom' => 'Pirate'])
             ->assertNotFound();
-        $this->agirEn($intrus)->deleteJson('/api/contacts/' . $contact->id)->assertNotFound();
+        $this->agirEn($intrus)->deleteJson('/api/clients/' . $contact->id)->assertNotFound();
 
-        $this->assertDatabaseHas('contacts', [
+        $this->assertDatabaseHas('clients', [
             'id' => $contact->id,
             'nom' => 'Dupont',
             'deleted_at' => null,

@@ -33,7 +33,7 @@ class RolePermissionMatrixTest extends TestCase
      */
     private array $expectedMatrix = [
         'Direction' => [
-            'contacts.voir', 'contacts.creer', 'contacts.modifier', 'contacts.supprimer',
+            'clients.voir', 'contacts.voir', 'clients.creer', 'contacts.creer', 'clients.modifier', 'contacts.modifier', 'clients.supprimer', 'contacts.supprimer',
             'opportunites.voir', 'opportunites.creer', 'opportunites.modifier', 'opportunites.supprimer',
             'devis.voir', 'devis.creer', 'devis.modifier', 'devis.supprimer', 'devis.envoyer',
             'bibliotheque_prix.voir', 'bibliotheque_prix.creer', 'bibliotheque_prix.modifier', 'bibliotheque_prix.supprimer',
@@ -49,7 +49,7 @@ class RolePermissionMatrixTest extends TestCase
             'parametres.gerer',
         ],
         'Commercial' => [
-            'contacts.voir', 'contacts.creer', 'contacts.modifier', 'contacts.supprimer',
+            'clients.voir', 'contacts.voir', 'clients.creer', 'contacts.creer', 'clients.modifier', 'contacts.modifier', 'clients.supprimer', 'contacts.supprimer',
             'opportunites.voir', 'opportunites.creer', 'opportunites.modifier', 'opportunites.supprimer',
             'devis.voir', 'devis.creer', 'devis.modifier', 'devis.supprimer', 'devis.envoyer',
             'bibliotheque_prix.voir', 'bibliotheque_prix.creer', 'bibliotheque_prix.modifier',
@@ -59,7 +59,7 @@ class RolePermissionMatrixTest extends TestCase
             'documents.voir',
         ],
         'Conducteur travaux' => [
-            'contacts.voir', 'opportunites.voir', 'devis.voir',
+            'clients.voir', 'contacts.voir', 'opportunites.voir', 'devis.voir',
             'chantiers.voir', 'chantiers.creer', 'chantiers.modifier', 'chantiers.supprimer',
             'situations_travaux.voir', 'situations_travaux.creer', 'situations_travaux.modifier', 'situations_travaux.supprimer',
             'factures.voir',
@@ -70,7 +70,7 @@ class RolePermissionMatrixTest extends TestCase
             'documents.voir', 'documents.creer', 'documents.modifier',
         ],
         'Administratif' => [
-            'contacts.voir', 'devis.voir', 'chantiers.voir', 'situations_travaux.voir',
+            'clients.voir', 'contacts.voir', 'devis.voir', 'chantiers.voir', 'situations_travaux.voir',
             'factures.voir', 'factures.creer', 'factures.modifier', 'factures.supprimer', 'factures.valider',
             'commandes_fournisseur.voir',
             'bibliotheque_prix.voir', 'bibliotheque_prix.creer', 'bibliotheque_prix.modifier', 'bibliotheque_prix.supprimer',
@@ -161,7 +161,7 @@ class RolePermissionMatrixTest extends TestCase
             ->sort()
             ->values();
 
-        $this->assertEquals(54, $unionFromMatrix->count());
-        $this->assertEquals(54, \Spatie\Permission\Models\Permission::count());
+        $this->assertEquals(58, $unionFromMatrix->count());
+        $this->assertEquals(58, \Spatie\Permission\Models\Permission::count());
     }
 }

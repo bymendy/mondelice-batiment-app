@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Un devis, rattache a un contact et, le cas echeant, a une opportunite.
+ * Un devis, rattache a un client et, le cas echeant, a une opportunite.
  *
  * Les montants totaux (total_ht, total_vat, total_ttc) sont calcules a
  * partir des lignes (QuoteLine) et stockes ici pour eviter un recalcul
@@ -23,7 +23,7 @@ class Quote extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'contact_id',
+        'client_id',
         'opportunity_id',
         'quote_number',
         'status',
@@ -37,13 +37,13 @@ class Quote extends Model
     ];
 
     /**
-     * Le contact destinataire du devis (meme archive).
+     * Le client destinataire du devis (meme archive).
      *
-     * @return BelongsTo<Contact, Quote>
+     * @return BelongsTo<Client, Quote>
      */
-    public function contact(): BelongsTo
+    public function client(): BelongsTo
     {
-        return $this->belongsTo(Contact::class)->withTrashed();
+        return $this->belongsTo(Client::class)->withTrashed();
     }
 
     /**

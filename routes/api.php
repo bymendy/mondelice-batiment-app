@@ -92,7 +92,10 @@ Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
  * (interface HasMiddleware), pas ici.
  */
 Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
+    Route::apiResource('clients', \App\Http\Controllers\ClientController::class);
     Route::apiResource('contacts', \App\Http\Controllers\ContactController::class);
+    Route::post('clients/{client}/contacts', [\App\Http\Controllers\ClientContactController::class, 'store']);
+    Route::delete('clients/{client}/contacts/{contact}', [\App\Http\Controllers\ClientContactController::class, 'destroy']);
 });
 
 /**

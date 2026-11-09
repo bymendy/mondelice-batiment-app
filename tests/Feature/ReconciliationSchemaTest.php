@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\ArticlePrix;
-use App\Models\Contact;
+use App\Models\Client;
 use App\Models\Opportunity;
 use App\Models\Quote;
 use App\Models\QuoteLine;
@@ -41,14 +41,13 @@ class ReconciliationSchemaTest extends TestCase
 
     public function test_les_anciennes_tables_n_existent_plus(): void
     {
-        $this->assertFalse(Schema::hasTable('clients'));
         $this->assertFalse(Schema::hasTable('price_library_items'));
     }
 
     public function test_les_cles_etrangeres_pointent_vers_les_nouvelles_tables(): void
     {
-        $this->assertSame('contacts', $this->tableCible('opportunities', 'contact_id'));
-        $this->assertSame('contacts', $this->tableCible('quotes', 'contact_id'));
+        $this->assertSame('clients', $this->tableCible('opportunities', 'client_id'));
+        $this->assertSame('clients', $this->tableCible('quotes', 'client_id'));
         $this->assertSame('articles_prix', $this->tableCible('quote_lines', 'article_prix_id'));
     }
 
@@ -57,7 +56,7 @@ class ReconciliationSchemaTest extends TestCase
         $entreprise = $this->creerEntreprise();
 
         $this->dansEntreprise($entreprise, function () {
-            $contact = Contact::create(['type' => 'particulier', 'nom' => 'Dupont']);
+            $contact = Client::create(['type' => 'particulier', 'nom' => 'Dupont']);
 
             $article = ArticlePrix::create([
                 'reference' => 'ART-REL',
@@ -69,9 +68,9 @@ class ReconciliationSchemaTest extends TestCase
                 'taux_tva' => 10,
             ]);
 
-            $opportunite = Opportunity::create(['contact_id' => $contact->id]);
+            $opportunite = Opportunity::create(['client_id' => $contact->id]);
             $devis = Quote::create([
-                'contact_id' => $contact->id,
+                'client_id' => $contact->id,
                 'opportunity_id' => $opportunite->id,
             ]);
             $ligne = QuoteLine::create([
@@ -81,8 +80,8 @@ class ReconciliationSchemaTest extends TestCase
                 'unit_price_ht' => 40,
             ]);
 
-            $this->assertTrue($opportunite->contact->is($contact));
-            $this->assertTrue($devis->contact->is($contact));
+            $this->assertTrue($opportunite->client->is($contact));
+            $this->assertTrue($devis->client->is($contact));
             $this->assertTrue($ligne->articlePrix->is($article));
             $this->assertCount(1, $devis->lines);
         });

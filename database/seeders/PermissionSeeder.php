@@ -35,6 +35,7 @@ class PermissionSeeder extends Seeder
     public function run(): void
     {
         $modules = [
+            'clients' => ['voir', 'creer', 'modifier', 'supprimer'],
             'contacts' => ['voir', 'creer', 'modifier', 'supprimer'],
             'opportunites' => ['voir', 'creer', 'modifier', 'supprimer'],
             'devis' => ['voir', 'creer', 'modifier', 'supprimer', 'envoyer'],
@@ -62,6 +63,7 @@ class PermissionSeeder extends Seeder
 
         $grants = [
             'Direction' => [
+                'clients' => ['voir', 'creer', 'modifier', 'supprimer'],
                 'contacts' => ['voir', 'creer', 'modifier', 'supprimer'],
                 'opportunites' => ['voir', 'creer', 'modifier', 'supprimer'],
                 'devis' => ['voir', 'creer', 'modifier', 'supprimer', 'envoyer'],
@@ -78,6 +80,7 @@ class PermissionSeeder extends Seeder
                 'parametres' => ['gerer'],
             ],
             'Commercial' => [
+                'clients' => ['voir', 'creer', 'modifier', 'supprimer'],
                 'contacts' => ['voir', 'creer', 'modifier', 'supprimer'],
                 'opportunites' => ['voir', 'creer', 'modifier', 'supprimer'],
                 'devis' => ['voir', 'creer', 'modifier', 'supprimer', 'envoyer'],
@@ -88,6 +91,7 @@ class PermissionSeeder extends Seeder
                 'documents' => ['voir'],
             ],
             'Conducteur travaux' => [
+                'clients' => ['voir'],
                 'contacts' => ['voir'],
                 'opportunites' => ['voir'],
                 'devis' => ['voir'],
@@ -103,6 +107,7 @@ class PermissionSeeder extends Seeder
             'Administratif' => [
                 'bibliotheque_prix' => ['voir', 'creer', 'modifier', 'supprimer'],
                 'parametres' => ['gerer'],
+                'clients' => ['voir'],
                 'contacts' => ['voir'],
                 'devis' => ['voir'],
                 'chantiers' => ['voir'],
