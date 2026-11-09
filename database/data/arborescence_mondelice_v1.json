@@ -1,0 +1,1278 @@
+[
+  {
+    "nom": "Généralités et préparation de chantier",
+    "enfants": [
+      {
+        "nom": "Frais et prestations générales",
+        "enfants": [
+          {
+            "nom": "Déplacements",
+            "enfants": []
+          },
+          {
+            "nom": "Prise en charge et forfaits",
+            "enfants": []
+          },
+          {
+            "nom": "Main-d'œuvre en régie",
+            "enfants": []
+          },
+          {
+            "nom": "Études, relevés et diagnostics",
+            "enfants": []
+          },
+          {
+            "nom": "Nettoyage de fin de chantier",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Installation de chantier",
+        "enfants": [
+          {
+            "nom": "Affichage et signalisation",
+            "enfants": []
+          },
+          {
+            "nom": "Clôtures et protections",
+            "enfants": []
+          },
+          {
+            "nom": "Échafaudages et nacelles",
+            "enfants": []
+          },
+          {
+            "nom": "Branchements provisoires",
+            "enfants": []
+          },
+          {
+            "nom": "Base-vie et sanitaires",
+            "enfants": []
+          },
+          {
+            "nom": "Gardiennage",
+            "enfants": []
+          },
+          {
+            "nom": "Remise en état des abords",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Location de matériel",
+        "enfants": [
+          {
+            "nom": "Levage et élévation de personnes",
+            "enfants": []
+          },
+          {
+            "nom": "Manutention",
+            "enfants": []
+          },
+          {
+            "nom": "Terrassement",
+            "enfants": []
+          },
+          {
+            "nom": "Démolition et sciage",
+            "enfants": []
+          },
+          {
+            "nom": "Perforation et fixation",
+            "enfants": []
+          },
+          {
+            "nom": "Transport",
+            "enfants": []
+          },
+          {
+            "nom": "Énergie et éclairage",
+            "enfants": []
+          },
+          {
+            "nom": "Nettoyage et traitement des surfaces",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Démolition et dépose",
+        "enfants": [
+          {
+            "nom": "Démolition de bâtiments",
+            "enfants": []
+          },
+          {
+            "nom": "Démolition de structures",
+            "enfants": []
+          },
+          {
+            "nom": "Démolition de cloisons et plafonds",
+            "enfants": []
+          },
+          {
+            "nom": "Dépose de revêtements",
+            "enfants": []
+          },
+          {
+            "nom": "Dépose de menuiseries et fermetures",
+            "enfants": []
+          },
+          {
+            "nom": "Dépose d'équipements",
+            "enfants": []
+          },
+          {
+            "nom": "Curage",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Gestion des déchets",
+        "enfants": [
+          {
+            "nom": "Tri et conditionnement",
+            "enfants": []
+          },
+          {
+            "nom": "Bennes",
+            "enfants": []
+          },
+          {
+            "nom": "Évacuation et transport",
+            "enfants": []
+          },
+          {
+            "nom": "Taxes de décharge",
+            "enfants": []
+          },
+          {
+            "nom": "Déchets dangereux",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Menus travaux",
+        "enfants": [
+          {
+            "nom": "Forages et carottages",
+            "enfants": []
+          },
+          {
+            "nom": "Percements et saignées",
+            "enfants": []
+          },
+          {
+            "nom": "Rebouchages",
+            "enfants": []
+          },
+          {
+            "nom": "Scellements et fixations",
+            "enfants": []
+          },
+          {
+            "nom": "Petits travaux d'étanchéité",
+            "enfants": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "nom": "Gros œuvre",
+    "enfants": [
+      {
+        "nom": "Terrassement",
+        "enfants": [
+          {
+            "nom": "Implantation",
+            "enfants": []
+          },
+          {
+            "nom": "Décapage de terre végétale",
+            "enfants": []
+          },
+          {
+            "nom": "Fouilles et tranchées",
+            "enfants": []
+          },
+          {
+            "nom": "Terrassement en masse",
+            "enfants": []
+          },
+          {
+            "nom": "Remblais",
+            "enfants": []
+          },
+          {
+            "nom": "Évacuation des terres",
+            "enfants": []
+          },
+          {
+            "nom": "Drainage périphérique",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Fondations",
+        "enfants": [
+          {
+            "nom": "Semelles",
+            "enfants": []
+          },
+          {
+            "nom": "Puits",
+            "enfants": []
+          },
+          {
+            "nom": "Longrines",
+            "enfants": []
+          },
+          {
+            "nom": "Radiers",
+            "enfants": []
+          },
+          {
+            "nom": "Fondations profondes",
+            "enfants": []
+          },
+          {
+            "nom": "Reprise en sous-œuvre",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Maçonnerie",
+        "enfants": [
+          {
+            "nom": "Murs en blocs béton",
+            "enfants": []
+          },
+          {
+            "nom": "Murs en briques",
+            "enfants": []
+          },
+          {
+            "nom": "Murs en béton cellulaire",
+            "enfants": []
+          },
+          {
+            "nom": "Murs en pierre",
+            "enfants": []
+          },
+          {
+            "nom": "Voiles béton",
+            "enfants": []
+          },
+          {
+            "nom": "Chaînages et linteaux",
+            "enfants": []
+          },
+          {
+            "nom": "Appuis, seuils et tableaux",
+            "enfants": []
+          },
+          {
+            "nom": "Traitement de l'humidité",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Béton armé",
+        "enfants": [
+          {
+            "nom": "Poteaux et poutres",
+            "enfants": []
+          },
+          {
+            "nom": "Dalles et planchers",
+            "enfants": []
+          },
+          {
+            "nom": "Dallages",
+            "enfants": []
+          },
+          {
+            "nom": "Escaliers",
+            "enfants": []
+          },
+          {
+            "nom": "Balcons et auvents",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Ouvertures et renforts",
+        "enfants": [
+          {
+            "nom": "Création d'ouvertures",
+            "enfants": []
+          },
+          {
+            "nom": "Agrandissement d'ouvertures",
+            "enfants": []
+          },
+          {
+            "nom": "Bouchement de baies",
+            "enfants": []
+          },
+          {
+            "nom": "Étaiement et consolidation",
+            "enfants": []
+          },
+          {
+            "nom": "Renforts métalliques",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Conduits de fumée et de ventilation",
+        "enfants": [
+          {
+            "nom": "Conduits maçonnés",
+            "enfants": []
+          },
+          {
+            "nom": "Conduits métalliques",
+            "enfants": []
+          },
+          {
+            "nom": "Tubage",
+            "enfants": []
+          },
+          {
+            "nom": "Souches de cheminée",
+            "enfants": []
+          },
+          {
+            "nom": "Ramonage et entretien",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Ossature bois",
+        "enfants": [
+          {
+            "nom": "Murs à ossature bois",
+            "enfants": []
+          },
+          {
+            "nom": "Planchers bois",
+            "enfants": []
+          },
+          {
+            "nom": "Extensions bois",
+            "enfants": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "nom": "Enveloppe du bâtiment",
+    "enfants": [
+      {
+        "nom": "Charpente",
+        "enfants": [
+          {
+            "nom": "Charpente traditionnelle",
+            "enfants": []
+          },
+          {
+            "nom": "Charpente industrielle (fermettes)",
+            "enfants": []
+          },
+          {
+            "nom": "Charpente métallique",
+            "enfants": []
+          },
+          {
+            "nom": "Traitement des bois",
+            "enfants": []
+          },
+          {
+            "nom": "Renforcement de charpente",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Couverture",
+        "enfants": [
+          {
+            "nom": "Tuiles",
+            "enfants": []
+          },
+          {
+            "nom": "Ardoises",
+            "enfants": []
+          },
+          {
+            "nom": "Couverture métallique",
+            "enfants": []
+          },
+          {
+            "nom": "Plaques fibres-ciment",
+            "enfants": []
+          },
+          {
+            "nom": "Écrans de sous-toiture",
+            "enfants": []
+          },
+          {
+            "nom": "Faîtages et rives",
+            "enfants": []
+          },
+          {
+            "nom": "Démoussage et traitement",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Zinguerie et eaux pluviales",
+        "enfants": [
+          {
+            "nom": "Gouttières",
+            "enfants": []
+          },
+          {
+            "nom": "Descentes",
+            "enfants": []
+          },
+          {
+            "nom": "Chéneaux",
+            "enfants": []
+          },
+          {
+            "nom": "Abergements",
+            "enfants": []
+          },
+          {
+            "nom": "Habillages de rives",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Fenêtres de toit et lumière naturelle",
+        "enfants": [
+          {
+            "nom": "Fenêtres de toit",
+            "enfants": []
+          },
+          {
+            "nom": "Volets et stores de toit",
+            "enfants": []
+          },
+          {
+            "nom": "Châssis d'accès",
+            "enfants": []
+          },
+          {
+            "nom": "Conduits de lumière",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Étanchéité des toitures-terrasses",
+        "enfants": [
+          {
+            "nom": "Préparation des supports",
+            "enfants": []
+          },
+          {
+            "nom": "Pare-vapeur",
+            "enfants": []
+          },
+          {
+            "nom": "Étanchéité bitumineuse",
+            "enfants": []
+          },
+          {
+            "nom": "Étanchéité liquide",
+            "enfants": []
+          },
+          {
+            "nom": "Étanchéité EPDM",
+            "enfants": []
+          },
+          {
+            "nom": "Toitures végétalisées",
+            "enfants": []
+          },
+          {
+            "nom": "Relevés et évacuations",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Isolation thermique et acoustique",
+        "enfants": [
+          {
+            "nom": "Combles perdus",
+            "enfants": []
+          },
+          {
+            "nom": "Rampants et sous-toiture",
+            "enfants": []
+          },
+          {
+            "nom": "Toiture par l'extérieur (sarking)",
+            "enfants": []
+          },
+          {
+            "nom": "Murs par l'intérieur",
+            "enfants": []
+          },
+          {
+            "nom": "Murs par l'extérieur (ITE)",
+            "enfants": []
+          },
+          {
+            "nom": "Planchers bas",
+            "enfants": []
+          },
+          {
+            "nom": "Isolation acoustique",
+            "enfants": []
+          },
+          {
+            "nom": "Étanchéité à l'air",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Façades",
+        "enfants": [
+          {
+            "nom": "Préparation et nettoyage",
+            "enfants": []
+          },
+          {
+            "nom": "Enduits et ravalement",
+            "enfants": []
+          },
+          {
+            "nom": "Peintures et revêtements de façade",
+            "enfants": []
+          },
+          {
+            "nom": "Imperméabilité",
+            "enfants": []
+          },
+          {
+            "nom": "Restauration de la pierre",
+            "enfants": []
+          },
+          {
+            "nom": "Bardages",
+            "enfants": []
+          },
+          {
+            "nom": "Traitements antigraffiti",
+            "enfants": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "nom": "Menuiseries et fermetures",
+    "enfants": [
+      {
+        "nom": "Menuiseries extérieures",
+        "enfants": [
+          {
+            "nom": "Fenêtres et portes-fenêtres",
+            "enfants": []
+          },
+          {
+            "nom": "Baies coulissantes",
+            "enfants": []
+          },
+          {
+            "nom": "Portes d'entrée",
+            "enfants": []
+          },
+          {
+            "nom": "Portes de service",
+            "enfants": []
+          },
+          {
+            "nom": "Vitrages",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Fermetures et occultations",
+        "enfants": [
+          {
+            "nom": "Volets roulants",
+            "enfants": []
+          },
+          {
+            "nom": "Volets battants",
+            "enfants": []
+          },
+          {
+            "nom": "Persiennes",
+            "enfants": []
+          },
+          {
+            "nom": "Stores extérieurs",
+            "enfants": []
+          },
+          {
+            "nom": "Portes de garage",
+            "enfants": []
+          },
+          {
+            "nom": "Motorisations",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Menuiseries intérieures",
+        "enfants": [
+          {
+            "nom": "Blocs-portes",
+            "enfants": []
+          },
+          {
+            "nom": "Portes coulissantes",
+            "enfants": []
+          },
+          {
+            "nom": "Placards et dressings",
+            "enfants": []
+          },
+          {
+            "nom": "Escaliers bois",
+            "enfants": []
+          },
+          {
+            "nom": "Plinthes, moulures et habillages",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Serrurerie et métallerie",
+        "enfants": [
+          {
+            "nom": "Garde-corps",
+            "enfants": []
+          },
+          {
+            "nom": "Rampes et mains courantes",
+            "enfants": []
+          },
+          {
+            "nom": "Grilles et barreaudages",
+            "enfants": []
+          },
+          {
+            "nom": "Escaliers métalliques",
+            "enfants": []
+          },
+          {
+            "nom": "Serrures et quincaillerie",
+            "enfants": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "nom": "Aménagement intérieur",
+    "enfants": [
+      {
+        "nom": "Plâtrerie et cloisons",
+        "enfants": [
+          {
+            "nom": "Cloisons",
+            "enfants": []
+          },
+          {
+            "nom": "Doublages",
+            "enfants": []
+          },
+          {
+            "nom": "Plafonds en plaques",
+            "enfants": []
+          },
+          {
+            "nom": "Faux plafonds suspendus",
+            "enfants": []
+          },
+          {
+            "nom": "Traitement des joints",
+            "enfants": []
+          },
+          {
+            "nom": "Enduits plâtre",
+            "enfants": []
+          },
+          {
+            "nom": "Staff et corniches",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Revêtements de sols",
+        "enfants": [
+          {
+            "nom": "Préparation des supports",
+            "enfants": []
+          },
+          {
+            "nom": "Chapes",
+            "enfants": []
+          },
+          {
+            "nom": "Carrelage",
+            "enfants": []
+          },
+          {
+            "nom": "Parquet",
+            "enfants": []
+          },
+          {
+            "nom": "Sols souples",
+            "enfants": []
+          },
+          {
+            "nom": "Moquette",
+            "enfants": []
+          },
+          {
+            "nom": "Sols résine et béton ciré",
+            "enfants": []
+          },
+          {
+            "nom": "Plinthes",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Revêtements muraux",
+        "enfants": [
+          {
+            "nom": "Faïence",
+            "enfants": []
+          },
+          {
+            "nom": "Papiers peints et toiles",
+            "enfants": []
+          },
+          {
+            "nom": "Revêtements décoratifs",
+            "enfants": []
+          },
+          {
+            "nom": "Lambris",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Peinture",
+        "enfants": [
+          {
+            "nom": "Préparation des supports",
+            "enfants": []
+          },
+          {
+            "nom": "Murs et plafonds",
+            "enfants": []
+          },
+          {
+            "nom": "Boiseries et métaux",
+            "enfants": []
+          },
+          {
+            "nom": "Lasures et vernis",
+            "enfants": []
+          },
+          {
+            "nom": "Peinture de sols",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Agencement et cuisine",
+        "enfants": [
+          {
+            "nom": "Cuisines",
+            "enfants": []
+          },
+          {
+            "nom": "Plans de travail",
+            "enfants": []
+          },
+          {
+            "nom": "Rangements sur mesure",
+            "enfants": []
+          },
+          {
+            "nom": "Habillages et décoration",
+            "enfants": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "nom": "Plomberie, chauffage et ventilation",
+    "enfants": [
+      {
+        "nom": "Plomberie",
+        "enfants": [
+          {
+            "nom": "Alimentation en eau",
+            "enfants": []
+          },
+          {
+            "nom": "Évacuations",
+            "enfants": []
+          },
+          {
+            "nom": "Production d'eau chaude",
+            "enfants": []
+          },
+          {
+            "nom": "Robinetterie",
+            "enfants": []
+          },
+          {
+            "nom": "Traitement de l'eau",
+            "enfants": []
+          },
+          {
+            "nom": "Recherche de fuite",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Sanitaires et salle de bains",
+        "enfants": [
+          {
+            "nom": "Appareils sanitaires",
+            "enfants": []
+          },
+          {
+            "nom": "Douches et receveurs",
+            "enfants": []
+          },
+          {
+            "nom": "Baignoires",
+            "enfants": []
+          },
+          {
+            "nom": "WC et bâti-supports",
+            "enfants": []
+          },
+          {
+            "nom": "Meubles de salle de bains",
+            "enfants": []
+          },
+          {
+            "nom": "Accessibilité PMR",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Chauffage",
+        "enfants": [
+          {
+            "nom": "Chaudières",
+            "enfants": []
+          },
+          {
+            "nom": "Pompes à chaleur",
+            "enfants": []
+          },
+          {
+            "nom": "Radiateurs",
+            "enfants": []
+          },
+          {
+            "nom": "Plancher chauffant",
+            "enfants": []
+          },
+          {
+            "nom": "Poêles et inserts",
+            "enfants": []
+          },
+          {
+            "nom": "Réseaux et régulation",
+            "enfants": []
+          },
+          {
+            "nom": "Entretien",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Ventilation et climatisation",
+        "enfants": [
+          {
+            "nom": "VMC simple flux",
+            "enfants": []
+          },
+          {
+            "nom": "VMC double flux",
+            "enfants": []
+          },
+          {
+            "nom": "Climatisation",
+            "enfants": []
+          },
+          {
+            "nom": "Gaines et bouches",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Gaz",
+        "enfants": [
+          {
+            "nom": "Alimentation gaz",
+            "enfants": []
+          },
+          {
+            "nom": "Raccordement des appareils",
+            "enfants": []
+          },
+          {
+            "nom": "Mise en conformité",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Énergies renouvelables",
+        "enfants": [
+          {
+            "nom": "Solaire thermique",
+            "enfants": []
+          },
+          {
+            "nom": "Solaire photovoltaïque",
+            "enfants": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "nom": "Électricité et courants faibles",
+    "enfants": [
+      {
+        "nom": "Installation électrique",
+        "enfants": [
+          {
+            "nom": "Tableaux et protections",
+            "enfants": []
+          },
+          {
+            "nom": "Mise à la terre",
+            "enfants": []
+          },
+          {
+            "nom": "Distribution et câblage",
+            "enfants": []
+          },
+          {
+            "nom": "Appareillage",
+            "enfants": []
+          },
+          {
+            "nom": "Mise en conformité",
+            "enfants": []
+          },
+          {
+            "nom": "Diagnostic électrique",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Éclairage",
+        "enfants": [
+          {
+            "nom": "Éclairage intérieur",
+            "enfants": []
+          },
+          {
+            "nom": "Éclairage extérieur",
+            "enfants": []
+          },
+          {
+            "nom": "Éclairage de sécurité",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Chauffage électrique",
+        "enfants": [
+          {
+            "nom": "Radiateurs électriques",
+            "enfants": []
+          },
+          {
+            "nom": "Sèche-serviettes",
+            "enfants": []
+          },
+          {
+            "nom": "Plancher rayonnant électrique",
+            "enfants": []
+          },
+          {
+            "nom": "Chauffe-eau électriques",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Courants faibles et réseaux",
+        "enfants": [
+          {
+            "nom": "Réseau informatique",
+            "enfants": []
+          },
+          {
+            "nom": "Télévision et antennes",
+            "enfants": []
+          },
+          {
+            "nom": "Interphonie et visiophonie",
+            "enfants": []
+          },
+          {
+            "nom": "Fibre optique",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Sécurité et domotique",
+        "enfants": [
+          {
+            "nom": "Alarme",
+            "enfants": []
+          },
+          {
+            "nom": "Vidéosurveillance",
+            "enfants": []
+          },
+          {
+            "nom": "Contrôle d'accès",
+            "enfants": []
+          },
+          {
+            "nom": "Domotique",
+            "enfants": []
+          },
+          {
+            "nom": "Détection incendie",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Mobilité électrique",
+        "enfants": [
+          {
+            "nom": "Bornes de recharge",
+            "enfants": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "nom": "Aménagements extérieurs",
+    "enfants": [
+      {
+        "nom": "Réseaux et assainissement",
+        "enfants": [
+          {
+            "nom": "Réseaux enterrés",
+            "enfants": []
+          },
+          {
+            "nom": "Raccordement au tout-à-l'égout",
+            "enfants": []
+          },
+          {
+            "nom": "Assainissement individuel",
+            "enfants": []
+          },
+          {
+            "nom": "Récupération des eaux pluviales",
+            "enfants": []
+          },
+          {
+            "nom": "Drainage",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Voirie et revêtements extérieurs",
+        "enfants": [
+          {
+            "nom": "Accès et voirie",
+            "enfants": []
+          },
+          {
+            "nom": "Pavés et dalles",
+            "enfants": []
+          },
+          {
+            "nom": "Enrobés",
+            "enfants": []
+          },
+          {
+            "nom": "Béton désactivé",
+            "enfants": []
+          },
+          {
+            "nom": "Graviers",
+            "enfants": []
+          },
+          {
+            "nom": "Bordures",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Terrasses",
+        "enfants": [
+          {
+            "nom": "Terrasses bois",
+            "enfants": []
+          },
+          {
+            "nom": "Terrasses composite",
+            "enfants": []
+          },
+          {
+            "nom": "Terrasses carrelées",
+            "enfants": []
+          },
+          {
+            "nom": "Terrasses béton",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Clôtures et portails",
+        "enfants": [
+          {
+            "nom": "Clôtures",
+            "enfants": []
+          },
+          {
+            "nom": "Portails",
+            "enfants": []
+          },
+          {
+            "nom": "Portillons",
+            "enfants": []
+          },
+          {
+            "nom": "Murets",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Murs de soutènement",
+        "enfants": [
+          {
+            "nom": "Murs en béton",
+            "enfants": []
+          },
+          {
+            "nom": "Murs en blocs",
+            "enfants": []
+          },
+          {
+            "nom": "Gabions",
+            "enfants": []
+          },
+          {
+            "nom": "Enrochements",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Espaces verts",
+        "enfants": [
+          {
+            "nom": "Plantations",
+            "enfants": []
+          },
+          {
+            "nom": "Gazon",
+            "enfants": []
+          },
+          {
+            "nom": "Arrosage",
+            "enfants": []
+          },
+          {
+            "nom": "Élagage et abattage",
+            "enfants": []
+          }
+        ]
+      },
+      {
+        "nom": "Équipements extérieurs",
+        "enfants": [
+          {
+            "nom": "Abris de jardin",
+            "enfants": []
+          },
+          {
+            "nom": "Carports",
+            "enfants": []
+          },
+          {
+            "nom": "Pergolas",
+            "enfants": []
+          }
+        ]
+      }
+    ]
+  }
+]
