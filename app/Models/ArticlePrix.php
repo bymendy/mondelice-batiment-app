@@ -66,6 +66,16 @@ class ArticlePrix extends Model
     ];
 
     /**
+     * Sous-detail de l'article (« pour 1 unite »), dans l'ordre d'affichage.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany<\App\Models\ArticleComposant>
+     */
+    public function composants(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ArticleComposant::class, 'article_id')->orderBy('ordre');
+    }
+
+    /**
      * Taux de marge calcule a la volee depuis prix_achat_ht et
      * prix_vente_ht -- jamais stocke en base (decision du 25/10/2026,
      * pour eviter toute desynchronisation entre les trois valeurs).
