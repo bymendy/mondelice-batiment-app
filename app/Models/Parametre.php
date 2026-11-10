@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
  * Reglage propre a une entreprise cliente (tache 3.4 bis).
  *
  * Usage :
- *   Parametre::lire('commercial_peut_modifier_bibliotheque');       // true par defaut
+ *   Parametre::lire('commercial_peut_modifier_bibliotheque');       // false par defaut (10 novembre 2026)
  *   Parametre::ecrire('commercial_peut_modifier_bibliotheque', false);
  *
  * Seules les cles declarees dans DEFINITIONS sont acceptees.
@@ -36,7 +36,7 @@ class Parametre extends Model
     public const DEFINITIONS = [
         'commercial_peut_modifier_bibliotheque' => [
             'libelle' => 'Le Commercial peut créer et modifier les articles de la Bibliothèque de prix',
-            'defaut' => true,
+            'defaut' => false,
             'regle' => 'boolean',
         ],
     ];

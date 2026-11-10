@@ -8,14 +8,14 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Applique l'interrupteur "le Commercial peut modifier la Bibliotheque de
- * prix" aux actions d'ecriture (creation, modification, archivage).
+ * Applique le reglage "le Commercial peut modifier la Bibliotheque de prix"
+ * aux actions d'ecriture (creation, modification).
  *
- * Direction et Administratif ne sont jamais concernes par le verrou : ce
- * sont eux qui le posent. Tout autre utilisateur qui a la permission
- * d'ecriture (en pratique le Commercial) est bloque quand le reglage est
- * desactive. La consultation n'est jamais bloquee (necessaire pour chiffrer
- * un devis).
+ * Depuis le 10 novembre 2026 : le reglage est DESACTIVE par defaut (le
+ * Commercial consulte seulement) et ne concerne que le Commercial. Un
+ * utilisateur qui a aussi le role Direction ou Conducteur travaux n'est jamais
+ * bloque : son droit d'ecriture ne vient pas du role Commercial. La
+ * consultation n'est jamais bloquee (necessaire pour chiffrer un devis).
  */
 class BibliothequePrixModifiable
 {
@@ -25,14 +25,18 @@ class BibliothequePrixModifiable
      * @return Response
      *
      * @throws \Symfony\Component\HttpKernel\Exception\HttpException 403 si le
-     *         verrou est actif pour cet utilisateur.
+     *         Commercial n'a pas ce droit dans son entreprise.
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $estGestionnaire = $request->user()?->hasAnyRole(['Direction', 'Administratif']);
+        $utilisateur = $request->user();
 
-        if (! $estGestionnaire && ! Parametre::lire('commercial_peut_modifier_bibliotheque')) {
-            abort(403, 'La modification de la bibliothèque de prix est verrouillée par la Direction ou l\'Administratif.');
+        $droitVientDuCommercial = $utilisateur !== null
+            && $utilisateur->hasRole('Commercial')
+            && ! $utilisateur->hasAnyRole(['Direction', 'Conducteur travaux']);
+
+        if ($droitVientDuCommercial && ! Parametre::lire('commercial_peut_modifier_bibliotheque')) {
+            abort(403, 'La modification de la bibliothèque de prix n\'est pas activée pour le Commercial : la Direction ou l\'Administratif peuvent l\'activer dans les réglages.');
         }
 
         return $next($request);

@@ -61,10 +61,9 @@ class ReconciliationSchemaTest extends TestCase
             $article = ArticlePrix::create([
                 'reference' => 'ART-REL',
                 'designation' => 'Pose de carrelage',
-                'categorie' => 'main_oeuvre',
+                'type_article' => 'main_oeuvre',
                 'unite' => 'm2',
-                'prix_achat_ht' => 25,
-                'prix_vente_ht' => 40,
+                'prix_force_ht' => 40,
                 'taux_tva' => 10,
             ]);
 

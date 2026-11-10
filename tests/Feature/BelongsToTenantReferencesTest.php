@@ -4,8 +4,8 @@ namespace Tests\Feature;
 
 use App\Exceptions\ReferenceNonModifiableException;
 use App\Exceptions\TenantNonIdentifieException;
-use App\Models\ArticlePrix;
 use App\Models\CategoriePrix;
+use App\Models\TauxHoraire;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use LogicException;
 use PHPUnit\Framework\Attributes\Test;
@@ -15,7 +15,7 @@ use Tests\TestCase;
 /**
  * Lignes « de reference » du trait BelongsToTenant (9 novembre 2026).
  *
- * Verifie que l'ajout est desactive par defaut (ArticlePrix reste strict et
+ * Verifie que l'ajout est desactive par defaut (TauxHoraire reste strict et
  * filtre sur le seul tenant courant), et que, pour un modele qui l'active
  * (CategoriePrix), les references sont visibles mais protegees.
  */
@@ -40,14 +40,14 @@ class BelongsToTenantReferencesTest extends TestCase
     {
         $entreprise = $this->creerEntreprise();
 
-        $sql = $this->dansEntreprise($entreprise, fn () => ArticlePrix::query()->toSql());
+        $sql = $this->dansEntreprise($entreprise, fn () => TauxHoraire::query()->toSql());
 
         // Le filtre doit rester « tenant_id = ? » : jamais « OR tenant_id IS NULL ».
         $this->assertStringNotContainsStringIgnoringCase('"tenant_id" is null', $sql);
-        $this->assertStringContainsString('"articles_prix"."tenant_id" = ?', $sql);
+        $this->assertStringContainsString('"taux_horaires"."tenant_id" = ?', $sql);
 
         $this->expectException(TenantNonIdentifieException::class);
-        ArticlePrix::query()->count();
+        TauxHoraire::query()->count();
     }
 
     #[Test]
@@ -55,7 +55,7 @@ class BelongsToTenantReferencesTest extends TestCase
     {
         $this->expectException(LogicException::class);
 
-        ArticlePrix::creerReference(['reference' => 'X']);
+        TauxHoraire::creerReference(['code' => 'X']);
     }
 
     #[Test]

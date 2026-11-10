@@ -39,7 +39,7 @@ class PermissionSeeder extends Seeder
             'contacts' => ['voir', 'creer', 'modifier', 'supprimer'],
             'opportunites' => ['voir', 'creer', 'modifier', 'supprimer'],
             'devis' => ['voir', 'creer', 'modifier', 'supprimer', 'envoyer'],
-            'bibliotheque_prix' => ['voir', 'creer', 'modifier', 'supprimer'],
+            'bibliotheque' => ['consulter', 'personnaliser', 'supprimer', 'voir_prix_achat'],
             'chantiers' => ['voir', 'creer', 'modifier', 'supprimer'],
             'situations_travaux' => ['voir', 'creer', 'modifier', 'supprimer'],
             'factures' => ['voir', 'creer', 'modifier', 'supprimer', 'valider'],
@@ -61,13 +61,20 @@ class PermissionSeeder extends Seeder
             }
         }
 
+        // Module renomme le 10 novembre 2026 (bibliotheque_prix -> bibliotheque) :
+        // retire les anciennes permissions (les roles sont resynchronises plus bas).
+        Permission::whereIn('name', [
+            'bibliotheque_prix.voir', 'bibliotheque_prix.creer',
+            'bibliotheque_prix.modifier', 'bibliotheque_prix.supprimer',
+        ])->where('guard_name', 'web')->delete();
+
         $grants = [
             'Direction' => [
                 'clients' => ['voir', 'creer', 'modifier', 'supprimer'],
                 'contacts' => ['voir', 'creer', 'modifier', 'supprimer'],
                 'opportunites' => ['voir', 'creer', 'modifier', 'supprimer'],
                 'devis' => ['voir', 'creer', 'modifier', 'supprimer', 'envoyer'],
-                'bibliotheque_prix' => ['voir', 'creer', 'modifier', 'supprimer'],
+                'bibliotheque' => ['consulter', 'personnaliser', 'supprimer', 'voir_prix_achat'],
                 'chantiers' => ['voir', 'creer', 'modifier', 'supprimer'],
                 'situations_travaux' => ['voir', 'creer', 'modifier', 'supprimer'],
                 'factures' => ['voir', 'creer', 'modifier', 'supprimer', 'valider'],
@@ -84,13 +91,14 @@ class PermissionSeeder extends Seeder
                 'contacts' => ['voir', 'creer', 'modifier', 'supprimer'],
                 'opportunites' => ['voir', 'creer', 'modifier', 'supprimer'],
                 'devis' => ['voir', 'creer', 'modifier', 'supprimer', 'envoyer'],
-                'bibliotheque_prix' => ['voir', 'creer', 'modifier'], // archivage reserve a Direction/Administratif ; verrouillable, voir BibliothequePrixModifiable
+                'bibliotheque' => ['consulter', 'personnaliser', 'voir_prix_achat'], // personnaliser : soumis au reglage commercial_peut_modifier_bibliotheque (desactive par defaut), voir BibliothequePrixModifiable
                 'chantiers' => ['voir'],
                 'planning' => ['voir'],
                 'tickets_sav' => ['voir', 'creer'],
                 'documents' => ['voir'],
             ],
             'Conducteur travaux' => [
+                'bibliotheque' => ['consulter', 'personnaliser', 'voir_prix_achat'],
                 'clients' => ['voir'],
                 'contacts' => ['voir'],
                 'opportunites' => ['voir'],
@@ -105,7 +113,7 @@ class PermissionSeeder extends Seeder
                 'documents' => ['voir', 'creer', 'modifier'],
             ],
             'Administratif' => [
-                'bibliotheque_prix' => ['voir', 'creer', 'modifier', 'supprimer'],
+                'bibliotheque' => ['consulter', 'voir_prix_achat'],
                 'parametres' => ['gerer'],
                 'clients' => ['voir', 'creer', 'modifier'],
                 'contacts' => ['voir', 'creer', 'modifier'],

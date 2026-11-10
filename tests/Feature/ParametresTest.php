@@ -45,14 +45,14 @@ class ParametresTest extends TestCase
         $this->agirEn($administratif)
             ->getJson('/api/parametres')
             ->assertOk()
-            ->assertJsonFragment(['cle' => self::CLE, 'valeur' => true]);
+            ->assertJsonFragment(['cle' => self::CLE, 'valeur' => false, 'defaut' => false]);
 
         $this->agirEn($administratif)
-            ->putJson('/api/parametres/' . self::CLE, ['valeur' => false])
+            ->putJson('/api/parametres/' . self::CLE, ['valeur' => true])
             ->assertOk();
 
         $valeur = $this->dansEntreprise($this->entreprise, fn () => Parametre::lire(self::CLE));
-        $this->assertFalse($valeur);
+        $this->assertTrue($valeur);
     }
 
     public function test_une_valeur_invalide_ou_une_cle_inconnue_est_refusee(): void
@@ -74,10 +74,10 @@ class ParametresTest extends TestCase
         $direction = $this->creerUtilisateur($this->entreprise, 'Direction');
 
         $this->agirEn($direction)
-            ->putJson('/api/parametres/' . self::CLE, ['valeur' => false])
+            ->putJson('/api/parametres/' . self::CLE, ['valeur' => true])
             ->assertOk();
 
-        $this->assertFalse($this->dansEntreprise($this->entreprise, fn () => Parametre::lire(self::CLE)));
-        $this->assertTrue($this->dansEntreprise($autreEntreprise, fn () => Parametre::lire(self::CLE)));
+        $this->assertTrue($this->dansEntreprise($this->entreprise, fn () => Parametre::lire(self::CLE)));
+        $this->assertFalse($this->dansEntreprise($autreEntreprise, fn () => Parametre::lire(self::CLE)));
     }
 }

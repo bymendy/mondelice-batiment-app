@@ -3,13 +3,14 @@
 namespace App\Enums;
 
 /**
- * Categorie d'un article de la Bibliotheque de prix (tache 3.3).
+ * Type d'un article de la Bibliotheque de prix (ancien enum CategorieArticle,
+ * renomme au lot 3 : le mot « categorie » designe desormais l'arborescence
+ * Domaine > Corps d'etat > Famille d'ouvrages, table categories_prix).
  *
- * Determine comment la marge se calcule et comment l'article se filtre
- * dans le catalogue -- pas de table a part, un enum PHP natif suffit
- * puisque la liste est fermee et ne varie pas par tenant.
+ * Liste fermee, identique pour toutes les entreprises : un enum PHP natif
+ * suffit, pas de table a part.
  */
-enum CategorieArticle: string
+enum TypeArticle: string
 {
     case Materiaux = 'materiaux';
     case MainOeuvre = 'main_oeuvre';

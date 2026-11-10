@@ -23,7 +23,7 @@ use LogicException;
  * tenant_id est gere automatiquement par BelongsToTenant.
  *
  * @property int $id
- * @property string $tenant_id
+ * @property string|null $tenant_id
  * @property int $article_id
  * @property TypeComposant $type
  * @property string|null $qualification
@@ -61,6 +61,17 @@ class ArticleComposant extends Model
         'prix_vente_ht' => 'decimal:4',
         'ordre' => 'integer',
     ];
+
+    /**
+     * Les composants d'un article de reference (tenant_id NULL) sont visibles
+     * par toutes les entreprises, en lecture seule.
+     *
+     * @return bool
+     */
+    public static function inclutReferences(): bool
+    {
+        return true;
+    }
 
     /**
      * Branche le controle « meme entreprise que l'article ».

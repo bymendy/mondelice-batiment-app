@@ -34,10 +34,9 @@ class ArticlePrixIsolationTest extends TestCase
             ->postJson('/api/bibliotheque-prix', [
                 'reference' => 'ART-SECRET',
                 'designation' => 'Article confidentiel',
-                'categorie' => 'materiaux',
+                'type_article' => 'materiaux',
                 'unite' => 'u',
-                'prix_achat_ht' => 10,
-                'prix_vente_ht' => 20,
+                'prix_force_ht' => 20,
                 'taux_tva' => 20,
             ])
             ->assertCreated()
