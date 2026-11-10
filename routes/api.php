@@ -86,6 +86,15 @@ Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
         ->parameters(['bibliotheque-prix' => 'articlePrix']);
     Route::post('bibliotheque-prix/{articlePrix}/personnaliser', [\App\Http\Controllers\ArticlePrixController::class, 'personnaliser']);
     Route::post('bibliotheque-prix/{articlePrix}/publier', [\App\Http\Controllers\ArticlePrixController::class, 'publier']);
+    Route::prefix('bibliotheque-prix/{articlePrix}/composants')
+        ->controller(\App\Http\Controllers\ArticleComposantController::class)
+        ->group(function () {
+            Route::get('/', 'index');
+            Route::post('/', 'store');
+            Route::put('ordre', 'reordonner');
+            Route::put('{composant}', 'update')->whereNumber('composant');
+            Route::delete('{composant}', 'destroy')->whereNumber('composant');
+        });
 });
 
 /**

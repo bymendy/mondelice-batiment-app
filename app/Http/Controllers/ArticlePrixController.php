@@ -166,12 +166,7 @@ class ArticlePrixController extends Controller implements HasMiddleware
         /** @var User $utilisateur */
         $utilisateur = $request->user();
 
-        abort_if($articlePrix->estReference(), 403, 'Un article de référence ne se modifie pas : personnalisez-le.');
-        abort_if(
-            $articlePrix->portee === 'entreprise' && ! $utilisateur->can('bibliotheque.publier_entreprise'),
-            403,
-            'Seule la Direction ou le Conducteur travaux modifie un article de l\'entreprise : personnalisez-le pour avoir votre version.'
-        );
+        $articlePrix->verifierModifiablePar($utilisateur);
 
         $articlePrix->update($request->validated());
         $articlePrix->load('composants');

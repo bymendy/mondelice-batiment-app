@@ -257,6 +257,30 @@ class ArticlePrix extends Model
     }
 
     /**
+     * Refuse (403) la modification de cet article, ou de son sous-detail, a un
+     * utilisateur qui n'en a pas le droit.
+     *
+     * Une reference ne se modifie jamais. Un article d'entreprise se modifie
+     * avec `bibliotheque.publier_entreprise`. Une version privee n'est visible
+     * que de son proprietaire (ou de la Direction si elle est orpheline) : qui
+     * arrive jusqu'ici peut la modifier.
+     *
+     * @param User $utilisateur
+     * @return void
+     *
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException 403.
+     */
+    public function verifierModifiablePar(User $utilisateur): void
+    {
+        abort_if($this->estReference(), 403, 'Un article de référence ne se modifie pas : personnalisez-le.');
+        abort_if(
+            $this->portee === 'entreprise' && ! $utilisateur->can('bibliotheque.publier_entreprise'),
+            403,
+            'Seule la Direction ou le Conducteur travaux modifie un article de l\'entreprise : personnalisez-le pour avoir votre version.'
+        );
+    }
+
+    /**
      * Sous-detail de l'article (« pour 1 unite »), dans l'ordre d'affichage.
      *
      * @return HasMany<ArticleComposant>
