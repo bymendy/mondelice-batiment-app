@@ -42,11 +42,22 @@ class ClientAccesTest extends TestCase
         $this->agirEn($conducteur)
             ->postJson('/api/clients', ['type' => 'particulier', 'nom' => 'Dupont'])
             ->assertForbidden();
+    }
 
+    public function test_l_administratif_cree_et_modifie_mais_ne_supprime_pas(): void
+    {
         $administratif = $this->creerUtilisateur($this->entreprise, 'Administratif');
-        $this->agirEn($administratif)
+
+        $id = $this->agirEn($administratif)
             ->postJson('/api/clients', ['type' => 'particulier', 'nom' => 'Dupont'])
-            ->assertForbidden();
+            ->assertCreated()
+            ->json('id');
+
+        $this->agirEn($administratif)
+            ->putJson('/api/clients/' . $id, ['siret' => '12345678901234'])
+            ->assertOk();
+
+        $this->agirEn($administratif)->deleteJson('/api/clients/' . $id)->assertForbidden();
     }
 
     public function test_le_commercial_peut_creer_un_contact(): void

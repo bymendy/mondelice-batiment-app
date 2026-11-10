@@ -107,8 +107,8 @@ class PermissionSeeder extends Seeder
             'Administratif' => [
                 'bibliotheque_prix' => ['voir', 'creer', 'modifier', 'supprimer'],
                 'parametres' => ['gerer'],
-                'clients' => ['voir'],
-                'contacts' => ['voir'],
+                'clients' => ['voir', 'creer', 'modifier'],
+                'contacts' => ['voir', 'creer', 'modifier'],
                 'devis' => ['voir'],
                 'chantiers' => ['voir'],
                 'situations_travaux' => ['voir'],

@@ -246,10 +246,15 @@ class ClientsEtContactsTest extends TestCase
         $terrain = $this->creerUtilisateur($this->entreprise, 'Salarié terrain');
         $this->agirEn($terrain)->getJson('/api/contacts')->assertForbidden();
 
+        $conducteur = $this->creerUtilisateur($this->entreprise, 'Conducteur travaux');
+        $this->agirEn($conducteur)
+            ->postJson('/api/contacts', ['nom' => 'Martin'])
+            ->assertForbidden();
+
         $administratif = $this->creerUtilisateur($this->entreprise, 'Administratif');
         $this->agirEn($administratif)
             ->postJson('/api/contacts', ['nom' => 'Martin'])
-            ->assertForbidden();
+            ->assertCreated();
 
         $commercial = $this->creerUtilisateur($this->entreprise, 'Commercial');
         $this->agirEn($commercial)->postJson('/api/contacts', ['nom' => 'Martin'])->assertCreated();

@@ -70,7 +70,8 @@ class RolePermissionMatrixTest extends TestCase
             'documents.voir', 'documents.creer', 'documents.modifier',
         ],
         'Administratif' => [
-            'clients.voir', 'contacts.voir', 'devis.voir', 'chantiers.voir', 'situations_travaux.voir',
+            'clients.voir', 'clients.creer', 'clients.modifier', 'contacts.voir', 'contacts.creer', 'contacts.modifier',
+            'devis.voir', 'chantiers.voir', 'situations_travaux.voir',
             'factures.voir', 'factures.creer', 'factures.modifier', 'factures.supprimer', 'factures.valider',
             'commandes_fournisseur.voir',
             'bibliotheque_prix.voir', 'bibliotheque_prix.creer', 'bibliotheque_prix.modifier', 'bibliotheque_prix.supprimer',
