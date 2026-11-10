@@ -5,48 +5,65 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreArticlePrixRequest;
 use App\Http\Requests\UpdateArticlePrixRequest;
 use App\Models\ArticlePrix;
+use App\Models\User;
 use App\Services\Bibliotheque\PresentateurArticlePrix;
+use App\Services\Bibliotheque\VersionsArticlePrix;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 
 /**
- * CRUD de la Bibliotheque de prix (taches 3.3 et 3.4, lot 3).
+ * CRUD de la Bibliotheque de prix (taches 3.3 et 3.4, lots 3 et 4).
  *
  * Catalogue de l'entreprise, plus les articles de reference partages (en
  * lecture seule). L'autorisation se fait par permission Spatie
  * "bibliotheque.*" via le middleware natif "can:".
  *
- * Lot 3 : tous les articles crees ont la portee `entreprise`. Les versions
- * privees et la resolution « privee > entreprise > reference » arrivent au
- * lot 4. Le sous-detail (composants) n'a pas encore de route.
+ * Lot 4 : un article de l'entreprise est `prive` (visible de son proprietaire
+ * seul) ou `entreprise` (visible de tous). Qui a `bibliotheque.publier_entreprise`
+ * (Direction, Conducteur travaux) cree et modifie les articles d'entreprise ;
+ * les autres ne travaillent que sur leurs versions privees. Dans la liste, un
+ * article n'apparait qu'une fois, dans sa version affichee : privee, sinon
+ * d'entreprise, sinon de reference.
  */
 class ArticlePrixController extends Controller implements HasMiddleware
 {
+    public function __construct(private readonly VersionsArticlePrix $versions)
+    {
+    }
+
     /**
      * Permission requise par action.
+     *
+     * Archiver (destroy) est controle dans l'action : la permission
+     * `bibliotheque.supprimer` OU etre proprietaire de la version privee.
      *
      * @return array<int, Middleware>
      */
     public static function middleware(): array
     {
         return [
-            new Middleware('can:bibliotheque.consulter', only: ['index', 'show']),
-            new Middleware('can:bibliotheque.personnaliser', only: ['store', 'update']),
-            new Middleware('can:bibliotheque.supprimer', only: ['destroy']),
-            new Middleware(\App\Http\Middleware\BibliothequePrixModifiable::class, only: ['store', 'update']),
+            new Middleware('can:bibliotheque.consulter', only: ['index', 'show', 'destroy']),
+            new Middleware('can:bibliotheque.personnaliser', only: ['store', 'update', 'personnaliser']),
+            new Middleware('can:bibliotheque.publier_entreprise', only: ['publier']),
+            new Middleware(\App\Http\Middleware\BibliothequePrixModifiable::class, only: ['store', 'update', 'personnaliser']),
         ];
     }
 
     /**
-     * Liste paginee des articles visibles (entreprise courante + references).
+     * Liste paginee des articles visibles, une seule version par article.
      *
      * Query params :
      *  - actif=0|1          filtre sur le statut actif (defaut : tous)
      *  - type_article=...   filtre sur le type (materiaux, main_oeuvre...)
      *  - categorie_id=...   filtre sur la categorie de l'arborescence
+     *  - portee=...         `prive` ou `entreprise` (les references n'ont pas de portee)
      *  - recherche=...      recherche texte sur reference/designation/fournisseur
+     *  - orphelines=1       Direction seule : versions privees dont le proprietaire
+     *                       a ete supprime (liste a part, sans resolution de version)
      *  - par_page=...       taille de page (defaut 25)
      *
      * @param Request $request
@@ -54,7 +71,22 @@ class ArticlePrixController extends Controller implements HasMiddleware
      */
     public function index(Request $request): JsonResponse
     {
+        $request->validate(['portee' => ['nullable', Rule::in(['prive', 'entreprise'])]]);
+
+        /** @var User $utilisateur */
+        $utilisateur = $request->user();
         $query = ArticlePrix::query()->with('composants');
+
+        if ($request->boolean('orphelines')) {
+            abort_unless($utilisateur->hasRole('Direction'), 403, 'Les versions orphelines sont réservées à la Direction.');
+            $query->orphelines();
+        } else {
+            $query->visiblesPour($utilisateur)->versionAffichee($utilisateur);
+        }
+
+        if ($request->filled('portee')) {
+            $query->where('articles_prix.portee', $request->string('portee'));
+        }
 
         if ($request->filled('actif')) {
             $query->where('actif', $request->boolean('actif'));
@@ -78,27 +110,36 @@ class ArticlePrixController extends Controller implements HasMiddleware
         }
 
         $page = $query->orderBy('designation')->paginate($request->integer('par_page', 25));
-        $presentateur = PresentateurArticlePrix::pour($request->user());
+        $presentateur = PresentateurArticlePrix::pour($utilisateur);
         $page->through(fn (ArticlePrix $article): array => $presentateur->presenter($article));
 
         return response()->json($page);
     }
 
     /**
-     * Cree un nouvel article de l'entreprise (portee `entreprise`).
+     * Cree un nouvel article.
+     *
+     * `portee` est facultative : `entreprise` pour qui peut publier, `prive`
+     * pour les autres. Demander `entreprise` sans en avoir le droit donne 403.
+     * `reference` est facultative : un code automatique est attribue.
      *
      * @param StoreArticlePrixRequest $request
      * @return JsonResponse
      */
     public function store(StoreArticlePrixRequest $request): JsonResponse
     {
-        $article = ArticlePrix::create($request->validated())->load('composants');
+        /** @var User $utilisateur */
+        $utilisateur = $request->user();
+        $donnees = $request->validated();
+        $portee = $this->porteeDemandee(Arr::pull($donnees, 'portee'), $utilisateur);
 
-        return response()->json(PresentateurArticlePrix::pour($request->user())->presenter($article), 201);
+        $article = $this->versions->creer($utilisateur, $donnees, $portee)->load('composants');
+
+        return response()->json(PresentateurArticlePrix::pour($utilisateur)->presenter($article), 201);
     }
 
     /**
-     * Affiche un article (de l'entreprise ou de reference).
+     * Affiche un article (de l'entreprise, a soi, ou de reference).
      *
      * @param Request $request
      * @param ArticlePrix $articlePrix
@@ -112,8 +153,9 @@ class ArticlePrixController extends Controller implements HasMiddleware
     }
 
     /**
-     * Met a jour un article de l'entreprise. Un article de reference ne se
-     * modifie pas (403).
+     * Met a jour un article. Un article de reference ne se modifie pas (403) ;
+     * un article d'entreprise se modifie avec `bibliotheque.publier_entreprise`.
+     * La portee ne change jamais ici (voir publier()).
      *
      * @param UpdateArticlePrixRequest $request
      * @param ArticlePrix $articlePrix
@@ -121,28 +163,105 @@ class ArticlePrixController extends Controller implements HasMiddleware
      */
     public function update(UpdateArticlePrixRequest $request, ArticlePrix $articlePrix): JsonResponse
     {
-        abort_if($articlePrix->estReference(), 403, 'Un article de référence ne se modifie pas.');
+        /** @var User $utilisateur */
+        $utilisateur = $request->user();
+
+        abort_if($articlePrix->estReference(), 403, 'Un article de référence ne se modifie pas : personnalisez-le.');
+        abort_if(
+            $articlePrix->portee === 'entreprise' && ! $utilisateur->can('bibliotheque.publier_entreprise'),
+            403,
+            'Seule la Direction ou le Conducteur travaux modifie un article de l\'entreprise : personnalisez-le pour avoir votre version.'
+        );
 
         $articlePrix->update($request->validated());
         $articlePrix->load('composants');
 
-        return response()->json(PresentateurArticlePrix::pour($request->user())->presenter($articlePrix));
+        return response()->json(PresentateurArticlePrix::pour($utilisateur)->presenter($articlePrix));
     }
 
     /**
      * Archive l'article (soft delete) -- jamais de suppression definitive
      * tant qu'un devis peut encore le referencer. Un article de reference ne
-     * s'archive pas (403).
+     * s'archive pas (403). Archivage permis avec `bibliotheque.supprimer`, ou
+     * a son proprietaire pour sa version privee.
      *
+     * @param Request $request
      * @param ArticlePrix $articlePrix
      * @return JsonResponse
      */
-    public function destroy(ArticlePrix $articlePrix): JsonResponse
+    public function destroy(Request $request, ArticlePrix $articlePrix): JsonResponse
     {
+        /** @var User $utilisateur */
+        $utilisateur = $request->user();
+
         abort_if($articlePrix->estReference(), 403, 'Un article de référence ne s\'archive pas.');
+
+        $estProprietaire = $articlePrix->portee === 'prive'
+            && (int) $articlePrix->proprietaire_id === (int) $utilisateur->getKey();
+        abort_unless($utilisateur->can('bibliotheque.supprimer') || $estProprietaire, 403, 'Vous ne pouvez pas archiver cet article.');
 
         $articlePrix->delete();
 
         return response()->json(null, 204);
+    }
+
+    /**
+     * Cree la version a soi d'une reference (ou d'une version de l'entreprise),
+     * avec son propre code. Reponse 201 avec la nouvelle version.
+     *
+     * @param Request $request
+     * @param ArticlePrix $articlePrix
+     * @return JsonResponse
+     */
+    public function personnaliser(Request $request, ArticlePrix $articlePrix): JsonResponse
+    {
+        $request->validate(['portee' => ['nullable', Rule::in(['prive', 'entreprise'])]]);
+
+        /** @var User $utilisateur */
+        $utilisateur = $request->user();
+        $portee = $this->porteeDemandee($request->input('portee'), $utilisateur);
+
+        $copie = $this->versions->personnaliser($articlePrix, $utilisateur, $portee);
+
+        return response()->json(PresentateurArticlePrix::pour($utilisateur)->presenter($copie), 201);
+    }
+
+    /**
+     * Publie une version privee pour toute l'entreprise (Direction, Conducteur
+     * travaux). La Direction peut aussi publier une version orpheline.
+     *
+     * @param Request $request
+     * @param ArticlePrix $articlePrix
+     * @return JsonResponse
+     */
+    public function publier(Request $request, ArticlePrix $articlePrix): JsonResponse
+    {
+        $article = $this->versions->publier($articlePrix)->load('composants');
+
+        return response()->json(PresentateurArticlePrix::pour($request->user())->presenter($article));
+    }
+
+    /**
+     * Portee effective d'une creation : celle demandee, sinon `entreprise` pour
+     * qui peut publier et `prive` pour les autres.
+     *
+     * @param mixed $demandee
+     * @param User $utilisateur
+     * @return string `prive` ou `entreprise`.
+     *
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException 403 si `entreprise` est demandee sans le droit de publier.
+     */
+    private function porteeDemandee(mixed $demandee, User $utilisateur): string
+    {
+        $peutPublier = $utilisateur->can('bibliotheque.publier_entreprise');
+        $portee = is_string($demandee) && $demandee !== '' ? $demandee : ($peutPublier ? 'entreprise' : 'prive');
+
+        abort_if(
+            $portee === 'entreprise' && ! $peutPublier,
+            403,
+            'Seule la Direction ou le Conducteur travaux crée un article pour toute l\'entreprise.'
+        );
+
+        return $portee;
     }
 }

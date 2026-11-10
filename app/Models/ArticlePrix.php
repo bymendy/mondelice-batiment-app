@@ -7,11 +7,13 @@ use App\Enums\UniteArticle;
 use App\Models\Concerns\BelongsToTenant;
 use App\Services\Bibliotheque\CalculPrixArticle;
 use App\Services\Bibliotheque\ResultatPrixArticle;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Article de la Bibliotheque de prix (taches 3.3, lots 2 et 3).
@@ -28,6 +30,13 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * Articles de reference (lot 3) : tenant_id NULL, partages par toutes les
  * entreprises, en lecture seule pour elles. Ils se creent uniquement par
  * ArticlePrix::creerReference() (seeders, console de l'Editeur).
+ *
+ * Versions (lot 4) : un article d'entreprise a la portee `entreprise` (visible
+ * de toute l'entreprise) ou `prive` (visible de son proprietaire seul). Une
+ * version personnalisee d'une reference porte `article_origine_id`. La version
+ * affichee suit la regle « privee > entreprise > reference » (voir
+ * scopeVersionAffichee()). Une version privee dont le proprietaire a ete
+ * supprime (`proprietaire_id` NULL) est « orpheline » : seule la Direction la voit.
  *
  * tenant_id est gere automatiquement par BelongsToTenant : jamais dans
  * $fillable, jamais a fournir explicitement a la creation.
@@ -127,6 +136,124 @@ class ArticlePrix extends Model
                 $article->prix_mis_a_jour_le = now();
             }
         });
+    }
+
+    /**
+     * Articles que l'utilisateur a le droit de voir : references, articles
+     * de l'entreprise, ses propres versions privees, et pour la Direction les
+     * versions privees orphelines (si demande).
+     *
+     * Vient EN PLUS du filtre d'entreprise automatique (references + entreprise
+     * courante).
+     *
+     * @param Builder<ArticlePrix> $requete
+     * @param User|null $utilisateur
+     * @param bool $avecOrphelines Inclure les versions privees orphelines (Direction seule).
+     * @return Builder<ArticlePrix>
+     */
+    public function scopeVisiblesPour(Builder $requete, ?User $utilisateur, bool $avecOrphelines = false): Builder
+    {
+        $table = $this->getTable();
+
+        return $requete->where(function (Builder $visible) use ($table, $utilisateur, $avecOrphelines): void {
+            $visible->whereNull("{$table}.tenant_id")
+                ->orWhere("{$table}.portee", 'entreprise');
+
+            if ($utilisateur !== null) {
+                $visible->orWhere(function (Builder $prive) use ($table, $utilisateur): void {
+                    $prive->where("{$table}.portee", 'prive')
+                        ->where("{$table}.proprietaire_id", $utilisateur->getKey());
+                });
+            }
+
+            if ($avecOrphelines && $utilisateur !== null && $utilisateur->hasRole('Direction')) {
+                $visible->orWhere(function (Builder $orpheline) use ($table): void {
+                    $orpheline->where("{$table}.portee", 'prive')->whereNull("{$table}.proprietaire_id");
+                });
+            }
+        });
+    }
+
+    /**
+     * Versions privees orphelines (proprietaire supprime), a afficher a la
+     * Direction seule : voir scopeVisiblesPour().
+     *
+     * @param Builder<ArticlePrix> $requete
+     * @return Builder<ArticlePrix>
+     */
+    public function scopeOrphelines(Builder $requete): Builder
+    {
+        return $requete->where($this->getTable() . '.portee', 'prive')
+            ->whereNull($this->getTable() . '.proprietaire_id');
+    }
+
+    /**
+     * Ne garde, pour chaque article de reference, que la version que
+     * l'utilisateur doit voir : sa version privee, sinon la version de
+     * l'entreprise, sinon la reference.
+     *
+     * Une ligne est masquee quand une autre ligne visible, du meme article
+     * d'origine, a une priorite plus forte (privee 1 > entreprise 2 > reference 3).
+     * Un article cree de toutes pieces (sans origine) n'est jamais masque. Les
+     * versions orphelines ne comptent pas dans cette resolution.
+     *
+     * @param Builder<ArticlePrix> $requete
+     * @param User|null $utilisateur
+     * @return Builder<ArticlePrix>
+     */
+    public function scopeVersionAffichee(Builder $requete, ?User $utilisateur): Builder
+    {
+        $table = $this->getTable();
+        $cle = 'COALESCE(%1$s.article_origine_id, CASE WHEN %1$s.tenant_id IS NULL THEN %1$s.id END)';
+        $priorite = "CASE WHEN %1\$s.tenant_id IS NULL THEN 3 WHEN %1\$s.portee = 'entreprise' THEN 2 ELSE 1 END";
+
+        $cleAutre = sprintf($cle, 'autre');
+        $cleCourante = sprintf($cle, $table);
+        $prioriteAutre = sprintf($priorite, 'autre');
+        $prioriteCourante = sprintf($priorite, $table);
+
+        $tenantId = tenant_id();
+        $proprietaire = $utilisateur?->getKey();
+
+        return $requete->whereNotExists(function ($sous) use ($cleAutre, $cleCourante, $prioriteAutre, $prioriteCourante, $tenantId, $proprietaire, $table): void {
+            $sous->select(DB::raw('1'))
+                ->from("{$table} as autre")
+                ->whereNull('autre.deleted_at')
+                ->whereRaw("{$cleAutre} = {$cleCourante}")
+                ->whereRaw("{$prioriteAutre} < {$prioriteCourante}")
+                ->where(function ($visible) use ($tenantId, $proprietaire): void {
+                    $visible->whereNull('autre.tenant_id')
+                        ->orWhere(function ($entreprise) use ($tenantId, $proprietaire): void {
+                            $entreprise->where('autre.tenant_id', $tenantId)
+                                ->where(function ($portee) use ($proprietaire): void {
+                                    $portee->where('autre.portee', 'entreprise');
+                                    if ($proprietaire !== null) {
+                                        $portee->orWhere(function ($prive) use ($proprietaire): void {
+                                            $prive->where('autre.portee', 'prive')
+                                                ->where('autre.proprietaire_id', $proprietaire);
+                                        });
+                                    }
+                                });
+                        });
+                });
+        });
+    }
+
+    /**
+     * Resolution de l'article dans l'URL : un article que l'utilisateur n'a pas
+     * le droit de voir (version privee d'un collegue) repond 404, comme un
+     * article d'une autre entreprise.
+     *
+     * @param mixed $valeur
+     * @param string|null $champ
+     * @return Model|null
+     */
+    public function resolveRouteBinding($valeur, $champ = null)
+    {
+        return $this->newQuery()
+            ->visiblesPour(request()->user(), true)
+            ->where($this->getTable() . '.' . ($champ ?? $this->getRouteKeyName()), $valeur)
+            ->first();
     }
 
     /**

@@ -84,6 +84,8 @@ Route::post('/2fa/login-verify', [\App\Http\Controllers\Auth\TwoFactorController
 Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
     Route::apiResource('bibliotheque-prix', \App\Http\Controllers\ArticlePrixController::class)
         ->parameters(['bibliotheque-prix' => 'articlePrix']);
+    Route::post('bibliotheque-prix/{articlePrix}/personnaliser', [\App\Http\Controllers\ArticlePrixController::class, 'personnaliser']);
+    Route::post('bibliotheque-prix/{articlePrix}/publier', [\App\Http\Controllers\ArticlePrixController::class, 'publier']);
 });
 
 /**

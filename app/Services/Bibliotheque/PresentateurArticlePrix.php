@@ -64,6 +64,8 @@ final class PresentateurArticlePrix
             'dtu_lien' => $article->dtu_lien,
             'est_reference' => $article->estReference(),
             'portee' => $article->portee,
+            'proprietaire_id' => $article->proprietaire_id,
+            'est_orpheline' => $article->portee === 'prive' && $article->proprietaire_id === null,
             'source' => $article->source,
             'version' => $article->version,
             'article_origine_id' => $article->article_origine_id,

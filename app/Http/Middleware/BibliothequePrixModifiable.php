@@ -9,7 +9,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Applique le reglage "le Commercial peut modifier la Bibliotheque de prix"
- * aux actions d'ecriture (creation, modification).
+ * aux actions d'ecriture (creation, modification, personnalisation).
  *
  * Depuis le 10 novembre 2026 : le reglage est DESACTIVE par defaut (le
  * Commercial consulte seulement) et ne concerne que le Commercial. Un

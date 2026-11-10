@@ -36,7 +36,7 @@ class RolePermissionMatrixTest extends TestCase
             'clients.voir', 'contacts.voir', 'clients.creer', 'contacts.creer', 'clients.modifier', 'contacts.modifier', 'clients.supprimer', 'contacts.supprimer',
             'opportunites.voir', 'opportunites.creer', 'opportunites.modifier', 'opportunites.supprimer',
             'devis.voir', 'devis.creer', 'devis.modifier', 'devis.supprimer', 'devis.envoyer',
-            'bibliotheque.consulter', 'bibliotheque.personnaliser', 'bibliotheque.supprimer', 'bibliotheque.voir_prix_achat',
+            'bibliotheque.consulter', 'bibliotheque.personnaliser', 'bibliotheque.supprimer', 'bibliotheque.voir_prix_achat', 'bibliotheque.publier_entreprise',
             'chantiers.voir', 'chantiers.creer', 'chantiers.modifier', 'chantiers.supprimer',
             'situations_travaux.voir', 'situations_travaux.creer', 'situations_travaux.modifier', 'situations_travaux.supprimer',
             'factures.voir', 'factures.creer', 'factures.modifier', 'factures.supprimer', 'factures.valider',
@@ -60,7 +60,7 @@ class RolePermissionMatrixTest extends TestCase
         ],
         'Conducteur travaux' => [
             'clients.voir', 'contacts.voir', 'opportunites.voir', 'devis.voir',
-            'bibliotheque.consulter', 'bibliotheque.personnaliser', 'bibliotheque.voir_prix_achat',
+            'bibliotheque.consulter', 'bibliotheque.personnaliser', 'bibliotheque.voir_prix_achat', 'bibliotheque.publier_entreprise',
             'chantiers.voir', 'chantiers.creer', 'chantiers.modifier', 'chantiers.supprimer',
             'situations_travaux.voir', 'situations_travaux.creer', 'situations_travaux.modifier', 'situations_travaux.supprimer',
             'factures.voir',
@@ -163,7 +163,7 @@ class RolePermissionMatrixTest extends TestCase
             ->sort()
             ->values();
 
-        $this->assertEquals(58, $unionFromMatrix->count());
-        $this->assertEquals(58, \Spatie\Permission\Models\Permission::count());
+        $this->assertEquals(59, $unionFromMatrix->count());
+        $this->assertEquals(59, \Spatie\Permission\Models\Permission::count());
     }
 }

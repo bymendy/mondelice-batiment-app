@@ -16,6 +16,9 @@ use Illuminate\Validation\Rules\Enum;
  * et permissions Spatie -- voir ArticlePrixController et le middleware de
  * permission sur la route.
  *
+ * Lot 4 : `reference` est facultative (code automatique) et `portee`
+ * (`prive` ou `entreprise`) peut etre demandee ; voir ArticlePrixController.
+ *
  * Le prix de vente n'est plus saisi : il est calcule depuis le sous-detail.
  * Seul un prix force (facultatif) peut etre impose.
  */
@@ -33,9 +36,10 @@ class StoreArticlePrixRequest extends FormRequest
     {
         return [
             'reference' => [
-                'required', 'string', 'max:50',
+                'nullable', 'string', 'max:50',
                 Rule::unique('articles_prix', 'reference')->where('tenant_id', tenant_id()),
             ],
+            'portee' => ['nullable', Rule::in(['prive', 'entreprise'])],
             'designation' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'type_article' => ['required', new Enum(TypeArticle::class)],
