@@ -86,6 +86,7 @@ Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
         ->parameters(['bibliotheque-prix' => 'articlePrix']);
     Route::post('bibliotheque-prix/{articlePrix}/personnaliser', [\App\Http\Controllers\ArticlePrixController::class, 'personnaliser']);
     Route::post('bibliotheque-prix/{articlePrix}/publier', [\App\Http\Controllers\ArticlePrixController::class, 'publier']);
+    Route::get('bibliotheque-prix/{articlePrix}/historique', [\App\Http\Controllers\ArticlePrixController::class, 'historique']);
     Route::prefix('bibliotheque-prix/{articlePrix}/composants')
         ->controller(\App\Http\Controllers\ArticleComposantController::class)
         ->group(function () {
@@ -117,5 +118,6 @@ Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
     Route::get('parametres', [\App\Http\Controllers\ParametreController::class, 'index']);
     Route::put('parametres/{cle}', [\App\Http\Controllers\ParametreController::class, 'update']);
     Route::get('parametres/seuils', [\App\Http\Controllers\SeuilTarifaireController::class, 'index']);
+    Route::get('parametres/seuils/historique', [\App\Http\Controllers\SeuilTarifaireController::class, 'historique']);
     Route::put('parametres/seuils/{type}', [\App\Http\Controllers\SeuilTarifaireController::class, 'update']);
 });

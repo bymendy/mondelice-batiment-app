@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreArticlePrixRequest;
 use App\Http\Requests\UpdateArticlePrixRequest;
+use App\Models\Activity;
 use App\Models\ArticlePrix;
 use App\Models\User;
 use App\Services\Bibliotheque\ControleSeuilsPrixForce;
+use App\Services\Bibliotheque\JournalPrix;
+use App\Services\Bibliotheque\PresentateurHistorique;
 use App\Services\Bibliotheque\PresentateurArticlePrix;
 use App\Services\Bibliotheque\VersionsArticlePrix;
 use Illuminate\Http\JsonResponse;
@@ -14,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 /**
@@ -32,7 +36,10 @@ use Illuminate\Validation\Rule;
  */
 class ArticlePrixController extends Controller implements HasMiddleware
 {
-    public function __construct(private readonly VersionsArticlePrix $versions)
+    public function __construct(
+        private readonly VersionsArticlePrix $versions,
+        private readonly JournalPrix $journal,
+    )
     {
     }
 
@@ -47,7 +54,7 @@ class ArticlePrixController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('can:bibliotheque.consulter', only: ['index', 'show', 'destroy']),
+            new Middleware('can:bibliotheque.consulter', only: ['index', 'show', 'destroy', 'historique']),
             new Middleware('can:bibliotheque.personnaliser', only: ['store', 'update', 'personnaliser']),
             new Middleware('can:bibliotheque.publier_entreprise', only: ['publier']),
             new Middleware(\App\Http\Middleware\BibliothequePrixModifiable::class, only: ['store', 'update', 'personnaliser']),
@@ -138,7 +145,12 @@ class ArticlePrixController extends Controller implements HasMiddleware
         // n'est accepte que pour la Direction (les autres le posent apres avoir decrit le cout).
         $this->controlerPrixForce($utilisateur, $donnees['prix_force_ht'] ?? null, [], null);
 
-        $article = $this->versions->creer($utilisateur, $donnees, $portee)->load('composants');
+        $article = DB::transaction(function () use ($utilisateur, $donnees, $portee): ArticlePrix {
+            $article = $this->versions->creer($utilisateur, $donnees, $portee);
+            $this->journal->articleCree($utilisateur, $article);
+
+            return $article;
+        })->load('composants');
 
         return response()->json(PresentateurArticlePrix::pour($utilisateur)->presenter($article), 201);
     }
@@ -176,7 +188,11 @@ class ArticlePrixController extends Controller implements HasMiddleware
         $donnees = $request->validated();
         $this->controlerPrixForce($utilisateur, $donnees['prix_force_ht'] ?? null, $articlePrix->composants, $articlePrix->prix_force_ht);
 
-        $articlePrix->update($donnees);
+        DB::transaction(function () use ($articlePrix, $donnees, $utilisateur): void {
+            $avant = $this->journal->instantane($articlePrix, JournalPrix::CHAMPS_ARTICLE);
+            $articlePrix->update($donnees);
+            $this->journal->articleModifie($utilisateur, $articlePrix, $avant);
+        });
         $articlePrix->load('composants');
 
         return response()->json(PresentateurArticlePrix::pour($utilisateur)->presenter($articlePrix));
@@ -224,7 +240,12 @@ class ArticlePrixController extends Controller implements HasMiddleware
         $utilisateur = $request->user();
         $portee = $this->porteeDemandee($request->input('portee'), $utilisateur);
 
-        $copie = $this->versions->personnaliser($articlePrix, $utilisateur, $portee);
+        $copie = DB::transaction(function () use ($articlePrix, $utilisateur, $portee): ArticlePrix {
+            $copie = $this->versions->personnaliser($articlePrix, $utilisateur, $portee);
+            $this->journal->articlePersonnalise($utilisateur, $copie, $articlePrix);
+
+            return $copie;
+        });
 
         return response()->json(PresentateurArticlePrix::pour($utilisateur)->presenter($copie), 201);
     }
@@ -239,9 +260,45 @@ class ArticlePrixController extends Controller implements HasMiddleware
      */
     public function publier(Request $request, ArticlePrix $articlePrix): JsonResponse
     {
-        $article = $this->versions->publier($articlePrix)->load('composants');
+        /** @var User $utilisateur */
+        $utilisateur = $request->user();
+
+        $article = DB::transaction(function () use ($articlePrix, $utilisateur): ArticlePrix {
+            $avant = $this->journal->instantane($articlePrix, ['portee', 'proprietaire_id']);
+            $article = $this->versions->publier($articlePrix);
+            $this->journal->articlePublie($utilisateur, $article, $avant);
+
+            return $article;
+        })->load('composants');
 
         return response()->json(PresentateurArticlePrix::pour($request->user())->presenter($article));
+    }
+
+    /**
+     * Historique des changements de prix d'un article : prix force, portee,
+     * sous-detail. Du plus recent au plus ancien, avec l'auteur et les valeurs
+     * avant et apres. Visible par qui voit l'article ; les prix d'achat ne sont
+     * lisibles qu'avec `bibliotheque.voir_prix_achat`.
+     *
+     * Query params : par_page (defaut 25).
+     *
+     * @param Request $request
+     * @param ArticlePrix $articlePrix
+     * @return JsonResponse
+     */
+    public function historique(Request $request, ArticlePrix $articlePrix): JsonResponse
+    {
+        $page = Activity::query()
+            ->where('subject_type', $articlePrix->getMorphClass())
+            ->where('subject_id', $articlePrix->getKey())
+            ->with('causer')
+            ->orderByDesc('id')
+            ->paginate($request->integer('par_page', 25));
+
+        $presentateur = PresentateurHistorique::pour($request->user());
+        $page->through(fn (Activity $entree): array => $presentateur->presenter($entree));
+
+        return response()->json($page);
     }
 
     /**

@@ -9,6 +9,7 @@ use App\Models\ArticleComposant;
 use App\Models\ArticlePrix;
 use App\Models\TauxHoraire;
 use App\Models\User;
+use App\Services\Bibliotheque\JournalPrix;
 use App\Services\Bibliotheque\PresentateurArticlePrix;
 use App\Services\Bibliotheque\PresentateurComposant;
 use Illuminate\Http\JsonResponse;
@@ -34,6 +35,10 @@ use Illuminate\Validation\ValidationException;
  */
 class ArticleComposantController extends Controller implements HasMiddleware
 {
+    public function __construct(private readonly JournalPrix $journal)
+    {
+    }
+
     /**
      * @return array<int, Middleware>
      */
@@ -76,11 +81,16 @@ class ArticleComposantController extends Controller implements HasMiddleware
             $donnees['designation'] = ! empty($donnees['designation']) ? $donnees['designation'] : $taux->libelle;
         }
 
-        $composant = DB::transaction(function () use ($articlePrix, $donnees): ArticleComposant {
+        $utilisateur = $request->user();
+
+        $composant = DB::transaction(function () use ($articlePrix, $donnees, $utilisateur): ArticleComposant {
             // Pas de max() sur la relation : elle est triee, ce que PostgreSQL refuse avec un agregat.
             $donnees['ordre'] ??= ((int) ArticleComposant::query()->where('article_id', $articlePrix->id)->max('ordre')) + 1;
 
-            return $articlePrix->composants()->create($donnees);
+            $composant = $articlePrix->composants()->create($donnees);
+            $this->journal->composantAjoute($utilisateur, $articlePrix, $composant);
+
+            return $composant;
         });
 
         return response()->json($this->ligneEtArticle($request->user(), $articlePrix, $composant), 201);
@@ -96,7 +106,13 @@ class ArticleComposantController extends Controller implements HasMiddleware
      */
     public function update(UpdateComposantRequest $request, ArticlePrix $articlePrix, ArticleComposant $composant): JsonResponse
     {
-        $composant->update($request->validated());
+        $utilisateur = $request->user();
+
+        DB::transaction(function () use ($composant, $request, $articlePrix, $utilisateur): void {
+            $avant = $this->journal->instantane($composant, JournalPrix::CHAMPS_COMPOSANT);
+            $composant->update($request->validated());
+            $this->journal->composantModifie($utilisateur, $articlePrix, $composant, $avant);
+        });
 
         return response()->json($this->ligneEtArticle($request->user(), $articlePrix, $composant->refresh()));
     }
@@ -115,7 +131,13 @@ class ArticleComposantController extends Controller implements HasMiddleware
         abort_unless($composant->article_id === $articlePrix->id, 404);
         $articlePrix->verifierModifiablePar($request->user());
 
-        $composant->delete();
+        $utilisateur = $request->user();
+
+        DB::transaction(function () use ($composant, $articlePrix, $utilisateur): void {
+            $avant = $this->journal->instantane($composant, JournalPrix::CHAMPS_COMPOSANT);
+            $composant->delete();
+            $this->journal->composantSupprime($utilisateur, $articlePrix, (int) $composant->getKey(), $avant);
+        });
 
         return response()->json($this->sousDetail($request->user(), $articlePrix));
     }
@@ -146,10 +168,15 @@ class ArticleComposantController extends Controller implements HasMiddleware
             ]);
         }
 
-        DB::transaction(function () use ($ids, $articlePrix): void {
+        $utilisateur = $request->user();
+        $ancienOrdre = ArticleComposant::query()->where('article_id', $articlePrix->id)->orderBy('ordre')->orderBy('id')->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        DB::transaction(function () use ($ids, $articlePrix, $utilisateur, $ancienOrdre): void {
             foreach ($ids as $position => $id) {
                 ArticleComposant::query()->where('article_id', $articlePrix->id)->whereKey($id)->update(['ordre' => $position + 1]);
             }
+
+            $this->journal->composantsReordonnes($utilisateur, $articlePrix, $ancienOrdre, $ids);
         });
 
         return response()->json($this->sousDetail($request->user(), $articlePrix));

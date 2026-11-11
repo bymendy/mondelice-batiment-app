@@ -3,11 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Enums\TypeSeuil;
+use App\Models\Activity;
 use App\Models\SeuilTarifaire;
+use App\Services\Bibliotheque\JournalPrix;
+use App\Services\Bibliotheque\PresentateurHistorique;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Seuils planchers de l'entreprise (lot 6). Reserve a la permission
@@ -19,6 +23,10 @@ use Illuminate\Routing\Controllers\Middleware;
  */
 class SeuilTarifaireController extends Controller implements HasMiddleware
 {
+    public function __construct(private readonly JournalPrix $journal)
+    {
+    }
+
     /**
      * @return array<int, Middleware>
      */
@@ -68,13 +76,44 @@ class SeuilTarifaireController extends Controller implements HasMiddleware
             'actif' => ['sometimes', 'boolean'],
         ]);
 
-        $seuil = SeuilTarifaire::query()->firstOrNew(['type' => $typeSeuil->value]);
-        $seuil->valeur = $donnees['valeur'];
-        $seuil->actif = $donnees['actif'] ?? ($seuil->exists ? $seuil->actif : true);
-        $seuil->defini_par = $request->user()->getKey();
-        $seuil->save();
+        $utilisateur = $request->user();
+
+        $seuil = DB::transaction(function () use ($typeSeuil, $donnees, $utilisateur): SeuilTarifaire {
+            $seuil = SeuilTarifaire::query()->firstOrNew(['type' => $typeSeuil->value]);
+            $avant = $seuil->exists ? $this->journal->instantane($seuil, JournalPrix::CHAMPS_SEUIL) : null;
+
+            $seuil->valeur = $donnees['valeur'];
+            $seuil->actif = $donnees['actif'] ?? ($seuil->exists ? $seuil->actif : true);
+            $seuil->defini_par = $utilisateur->getKey();
+            $seuil->save();
+
+            $this->journal->seuilModifie($utilisateur, $seuil, $avant);
+
+            return $seuil;
+        });
 
         return response()->json($this->presenter($typeSeuil, $seuil->refresh()));
+    }
+
+    /**
+     * Historique des seuils de l'entreprise (fixes et modifies), du plus recent
+     * au plus ancien. Query params : par_page (defaut 25).
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function historique(Request $request): JsonResponse
+    {
+        $page = Activity::query()
+            ->where('subject_type', (new SeuilTarifaire())->getMorphClass())
+            ->with('causer')
+            ->orderByDesc('id')
+            ->paginate($request->integer('par_page', 25));
+
+        $presentateur = PresentateurHistorique::pour($request->user());
+        $page->through(fn (Activity $entree): array => $presentateur->presenter($entree));
+
+        return response()->json($page);
     }
 
     /**
