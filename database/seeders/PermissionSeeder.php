@@ -49,7 +49,7 @@ class PermissionSeeder extends Seeder
             'tickets_sav' => ['voir', 'creer', 'modifier', 'supprimer', 'cloturer'],
             'documents' => ['voir', 'creer', 'modifier', 'supprimer'],
             'logs' => ['voir'],
-            'parametres' => ['gerer'],
+            'parametres' => ['gerer', 'seuils'],
         ];
 
         foreach ($modules as $module => $actions) {
@@ -84,7 +84,7 @@ class PermissionSeeder extends Seeder
                 'tickets_sav' => ['voir', 'creer', 'modifier', 'supprimer', 'cloturer'],
                 'documents' => ['voir', 'creer', 'modifier', 'supprimer'],
                 'logs' => ['voir'],
-                'parametres' => ['gerer'],
+                'parametres' => ['gerer', 'seuils'],
             ],
             'Commercial' => [
                 'clients' => ['voir', 'creer', 'modifier', 'supprimer'],

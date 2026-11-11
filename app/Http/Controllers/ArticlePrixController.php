@@ -6,6 +6,7 @@ use App\Http\Requests\StoreArticlePrixRequest;
 use App\Http\Requests\UpdateArticlePrixRequest;
 use App\Models\ArticlePrix;
 use App\Models\User;
+use App\Services\Bibliotheque\ControleSeuilsPrixForce;
 use App\Services\Bibliotheque\PresentateurArticlePrix;
 use App\Services\Bibliotheque\VersionsArticlePrix;
 use Illuminate\Http\JsonResponse;
@@ -133,6 +134,10 @@ class ArticlePrixController extends Controller implements HasMiddleware
         $donnees = $request->validated();
         $portee = $this->porteeDemandee(Arr::pull($donnees, 'portee'), $utilisateur);
 
+        // A la creation il n'y a pas encore de sous-detail : avec des seuils actifs, un prix force
+        // n'est accepte que pour la Direction (les autres le posent apres avoir decrit le cout).
+        $this->controlerPrixForce($utilisateur, $donnees['prix_force_ht'] ?? null, [], null);
+
         $article = $this->versions->creer($utilisateur, $donnees, $portee)->load('composants');
 
         return response()->json(PresentateurArticlePrix::pour($utilisateur)->presenter($article), 201);
@@ -168,7 +173,10 @@ class ArticlePrixController extends Controller implements HasMiddleware
 
         $articlePrix->verifierModifiablePar($utilisateur);
 
-        $articlePrix->update($request->validated());
+        $donnees = $request->validated();
+        $this->controlerPrixForce($utilisateur, $donnees['prix_force_ht'] ?? null, $articlePrix->composants, $articlePrix->prix_force_ht);
+
+        $articlePrix->update($donnees);
         $articlePrix->load('composants');
 
         return response()->json(PresentateurArticlePrix::pour($utilisateur)->presenter($articlePrix));
@@ -234,6 +242,35 @@ class ArticlePrixController extends Controller implements HasMiddleware
         $article = $this->versions->publier($articlePrix)->load('composants');
 
         return response()->json(PresentateurArticlePrix::pour($request->user())->presenter($article));
+    }
+
+    /**
+     * Controle un prix force pose a la main contre les seuils de la Direction.
+     *
+     * Ne controle pas : la Direction (permission `parametres.seuils`), la
+     * suppression du prix force (null), ni un prix inchange (sinon un article
+     * deja sous un seuil nouvellement fixe ne pourrait plus changer de
+     * designation).
+     *
+     * @param User $utilisateur
+     * @param mixed $demande Prix force demande, ou null.
+     * @param iterable<\App\Models\ArticleComposant> $composants Sous-detail actuel.
+     * @param mixed $actuel Prix force actuel de l'article, ou null.
+     * @return void
+     *
+     * @throws \Illuminate\Http\Exceptions\HttpResponseException 422 si le prix est sous le seuil ou non verifiable.
+     */
+    private function controlerPrixForce(User $utilisateur, mixed $demande, iterable $composants, mixed $actuel): void
+    {
+        if ($demande === null || $utilisateur->can('parametres.seuils')) {
+            return;
+        }
+
+        if ($actuel !== null && abs((float) $actuel - (float) $demande) < 0.005) {
+            return;
+        }
+
+        ControleSeuilsPrixForce::pourEntrepriseCourante()->verifier($composants, (float) $demande);
     }
 
     /**

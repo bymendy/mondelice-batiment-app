@@ -116,4 +116,6 @@ Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
 Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
     Route::get('parametres', [\App\Http\Controllers\ParametreController::class, 'index']);
     Route::put('parametres/{cle}', [\App\Http\Controllers\ParametreController::class, 'update']);
+    Route::get('parametres/seuils', [\App\Http\Controllers\SeuilTarifaireController::class, 'index']);
+    Route::put('parametres/seuils/{type}', [\App\Http\Controllers\SeuilTarifaireController::class, 'update']);
 });
