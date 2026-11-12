@@ -134,3 +134,14 @@ Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
     Route::delete('adresses/{adresse}', [\App\Http\Controllers\AdresseController::class, 'destroy']);
     Route::get('doublons/clients', \App\Http\Controllers\DoublonClientController::class);
 });
+
+/**
+ * Reglages du pipeline commercial (module Clients / CRM, lot O1) :
+ * etapes, sources, motifs. Permissions appliquees par les controleurs.
+ */
+Route::middleware(['auth:sanctum', 'require.mfa'])->prefix('pipeline')->group(function () {
+    Route::get('etapes', [\App\Http\Controllers\EtapePipelineController::class, 'index']);
+    Route::put('etapes/{etape}', [\App\Http\Controllers\EtapePipelineController::class, 'update'])->whereNumber('etape');
+    Route::apiResource('sources', \App\Http\Controllers\SourceController::class)->except(['show']);
+    Route::apiResource('motifs', \App\Http\Controllers\MotifController::class)->except(['show']);
+});

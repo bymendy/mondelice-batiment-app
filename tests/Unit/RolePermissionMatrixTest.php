@@ -46,7 +46,7 @@ class RolePermissionMatrixTest extends TestCase
             'tickets_sav.voir', 'tickets_sav.creer', 'tickets_sav.modifier', 'tickets_sav.supprimer', 'tickets_sav.cloturer',
             'documents.voir', 'documents.creer', 'documents.modifier', 'documents.supprimer',
             'logs.voir',
-            'parametres.gerer', 'parametres.seuils',
+            'parametres.gerer', 'parametres.seuils', 'pipeline.parametrer',
         ],
         'Commercial' => [
             'clients.voir', 'contacts.voir', 'clients.creer', 'contacts.creer', 'clients.modifier', 'contacts.modifier', 'clients.supprimer', 'contacts.supprimer',
@@ -163,7 +163,7 @@ class RolePermissionMatrixTest extends TestCase
             ->sort()
             ->values();
 
-        $this->assertEquals(60, $unionFromMatrix->count());
-        $this->assertEquals(60, \Spatie\Permission\Models\Permission::count());
+        $this->assertEquals(61, $unionFromMatrix->count());
+        $this->assertEquals(61, \Spatie\Permission\Models\Permission::count());
     }
 }

@@ -47,11 +47,11 @@ class Quote extends Model
     }
 
     /**
-     * @return BelongsTo<Opportunity, Quote>
+     * @return BelongsTo<Opportunite, Quote>
      */
     public function opportunity(): BelongsTo
     {
-        return $this->belongsTo(Opportunity::class);
+        return $this->belongsTo(Opportunite::class, 'opportunity_id');
     }
 
     /**

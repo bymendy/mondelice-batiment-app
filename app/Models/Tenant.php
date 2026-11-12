@@ -19,6 +19,21 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     use HasDatabase, HasDomains;
 
     /**
+     * Cree les reglages du CRM (etapes du pipeline, sources, motifs) des la
+     * creation de l'entreprise.
+     *
+     * @return void
+     */
+    protected static function booted(): void
+    {
+        parent::booted();
+
+        static::created(function (Tenant $entreprise): void {
+            \App\Services\Crm\InitialisationCrm::pour((string) $entreprise->getTenantKey());
+        });
+    }
+
+    /**
      * @return array<int, string>
      */
     public static function getCustomColumns(): array

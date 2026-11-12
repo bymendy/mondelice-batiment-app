@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
-use App\Enums\SourceLead;
 use App\Enums\TypeClient;
 use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -35,7 +35,7 @@ use LogicException;
  * @property string|null $telephone
  * @property string|null $telephone_normalise
  * @property string|null $email
- * @property SourceLead|null $source_lead
+ * @property int|null $source_id
  * @property \Illuminate\Support\Carbon|null $ne_plus_demarcher_le
  * @property string|null $notes
  */
@@ -56,16 +56,35 @@ class Client extends Model
         'tva_intra',
         'telephone',
         'email',
-        'source_lead',
+        'source_id',
         'ne_plus_demarcher_le',
         'notes',
     ];
 
     protected $casts = [
         'type' => TypeClient::class,
-        'source_lead' => SourceLead::class,
         'ne_plus_demarcher_le' => 'date',
     ];
+
+    /**
+     * La source d'ou vient le client (reglage de l'entreprise).
+     *
+     * @return BelongsTo<Source, Client>
+     */
+    public function source(): BelongsTo
+    {
+        return $this->belongsTo(Source::class, 'source_id');
+    }
+
+    /**
+     * Les affaires (opportunites) de ce client.
+     *
+     * @return HasMany<Opportunite>
+     */
+    public function opportunites(): HasMany
+    {
+        return $this->hasMany(Opportunite::class);
+    }
 
     /**
      * Les adresses du client (une de facturation, plusieurs de chantier).

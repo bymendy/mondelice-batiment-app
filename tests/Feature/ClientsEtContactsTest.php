@@ -297,8 +297,10 @@ class ClientsEtContactsTest extends TestCase
         $this->assertFalse(Schema::hasColumn('contacts', 'type'));
         $this->assertFalse(Schema::hasColumn('contacts', 'siret'));
 
-        $this->assertTrue(Schema::hasColumn('opportunities', 'client_id'));
-        $this->assertFalse(Schema::hasColumn('opportunities', 'contact_id'));
+        $this->assertTrue(Schema::hasColumn('opportunites', 'client_id'));
+        // Depuis le lot O1, contact_id designe la personne a joindre (table contacts),
+        // et non plus l'ancienne fiche renommee en client_id.
+        $this->assertTrue(Schema::hasColumn('opportunites', 'contact_id'));
         $this->assertTrue(Schema::hasColumn('quotes', 'client_id'));
         $this->assertFalse(Schema::hasColumn('quotes', 'contact_id'));
     }

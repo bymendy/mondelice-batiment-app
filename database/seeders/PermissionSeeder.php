@@ -50,6 +50,7 @@ class PermissionSeeder extends Seeder
             'documents' => ['voir', 'creer', 'modifier', 'supprimer'],
             'logs' => ['voir'],
             'parametres' => ['gerer', 'seuils'],
+            'pipeline' => ['parametrer'],
         ];
 
         foreach ($modules as $module => $actions) {
@@ -85,6 +86,7 @@ class PermissionSeeder extends Seeder
                 'documents' => ['voir', 'creer', 'modifier', 'supprimer'],
                 'logs' => ['voir'],
                 'parametres' => ['gerer', 'seuils'],
+                'pipeline' => ['parametrer'],
             ],
             'Commercial' => [
                 'clients' => ['voir', 'creer', 'modifier', 'supprimer'],

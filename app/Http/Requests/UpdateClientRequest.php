@@ -2,9 +2,9 @@
 
 namespace App\Http\Requests;
 
-use App\Enums\SourceLead;
 use App\Enums\TypeClient;
 use App\Models\Client;
+use App\Models\Source;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -38,7 +38,11 @@ class UpdateClientRequest extends FormRequest
             'tva_intra' => ['nullable', 'string', 'max:20'],
             'telephone' => ['nullable', 'string', 'max:30'],
             'email' => ['nullable', 'email', 'max:255'],
-            'source_lead' => ['nullable', new Enum(SourceLead::class)],
+            'source_id' => ['nullable', 'integer', function (string $attribute, mixed $valeur, Closure $echec): void {
+                if ($valeur !== null && ! Source::query()->whereKey($valeur)->exists()) {
+                    $echec('Cette source n\'existe pas.');
+                }
+            }],
             'ne_plus_demarcher_le' => ['nullable', 'date'],
             'notes' => ['nullable', 'string'],
         ];

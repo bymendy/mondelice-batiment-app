@@ -39,7 +39,7 @@ class ClientController extends Controller implements HasMiddleware
      *
      * Query params :
      *  - type=particulier|professionnel|syndic|prescripteur|collectivite
-     *  - source_lead=...
+     *  - source_id=...
      *  - recherche=...  sur nom, prenom, raison sociale, email, telephone, ville
      *  - par_page=...   taille de page (defaut 25)
      *
@@ -54,8 +54,8 @@ class ClientController extends Controller implements HasMiddleware
             $query->where('type', $request->string('type'));
         }
 
-        if ($request->filled('source_lead')) {
-            $query->where('source_lead', $request->string('source_lead'));
+        if ($request->filled('source_id')) {
+            $query->where('source_id', $request->integer('source_id'));
         }
 
         if ($request->filled('recherche')) {

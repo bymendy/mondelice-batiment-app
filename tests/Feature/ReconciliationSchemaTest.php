@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\ArticlePrix;
 use App\Models\Client;
-use App\Models\Opportunity;
+use App\Models\Opportunite;
 use App\Models\Quote;
 use App\Models\QuoteLine;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -46,7 +46,7 @@ class ReconciliationSchemaTest extends TestCase
 
     public function test_les_cles_etrangeres_pointent_vers_les_nouvelles_tables(): void
     {
-        $this->assertSame('clients', $this->tableCible('opportunities', 'client_id'));
+        $this->assertSame('clients', $this->tableCible('opportunites', 'client_id'));
         $this->assertSame('clients', $this->tableCible('quotes', 'client_id'));
         $this->assertSame('articles_prix', $this->tableCible('quote_lines', 'article_prix_id'));
     }
@@ -67,7 +67,7 @@ class ReconciliationSchemaTest extends TestCase
                 'taux_tva' => 10,
             ]);
 
-            $opportunite = Opportunity::create(['client_id' => $contact->id]);
+            $opportunite = Opportunite::create(['client_id' => $contact->id, 'titre' => 'Renovation']);
             $devis = Quote::create([
                 'client_id' => $contact->id,
                 'opportunity_id' => $opportunite->id,
