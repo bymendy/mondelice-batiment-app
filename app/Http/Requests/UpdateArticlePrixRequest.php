@@ -34,7 +34,7 @@ class UpdateArticlePrixRequest extends FormRequest
                     ->ignore($this->route('articlePrix')),
             ],
             'designation' => ['sometimes', 'required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
+            'description' => ['nullable', 'string', 'max:20000', StoreArticlePrixRequest::regleDescription()],
             'type_article' => ['sometimes', 'required', new Enum(TypeArticle::class)],
             'categorie_id' => ['nullable', 'integer', StoreArticlePrixRequest::regleCategorie()],
             'unite' => ['sometimes', 'required', new Enum(UniteArticle::class)],

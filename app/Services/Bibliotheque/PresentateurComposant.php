@@ -17,9 +17,8 @@ use App\Models\User;
  * Les prix d'achat, couts de revient et totaux de revient ne sont renvoyes
  * qu'aux utilisateurs qui ont `bibliotheque.voir_prix_achat`.
  *
- * Les totaux de ligne sont arrondis a l'affichage ; le prix de l'article est
- * arrondi une seule fois sur la somme (CalculPrixArticle), il peut donc differer
- * de la somme des lignes affichees d'un centime au plus.
+ * Le total de chaque ligne est arrondi au centime (Arrondi) et le prix de
+ * l'article est la somme de ces totaux : ce que le client voit s'additionne.
  */
 final class PresentateurComposant
 {
@@ -88,11 +87,11 @@ final class PresentateurComposant
         }
 
         $donnees['prix_vente_unitaire_ht'] = $venteUnitaire;
-        $donnees['total_vente_ht'] = $venteUnitaire !== null ? round($quantite * $venteUnitaire, 2) : null;
+        $donnees['total_vente_ht'] = $venteUnitaire !== null ? Arrondi::ligne($quantite, $venteUnitaire) : null;
 
         if ($this->voirPrixAchat) {
             $donnees['prix_achat_unitaire_ht'] = $achatUnitaire;
-            $donnees['total_revient_ht'] = $achatUnitaire !== null ? round($quantite * $achatUnitaire, 2) : null;
+            $donnees['total_revient_ht'] = $achatUnitaire !== null ? Arrondi::ligne($quantite, $achatUnitaire) : null;
         }
 
         return $donnees;

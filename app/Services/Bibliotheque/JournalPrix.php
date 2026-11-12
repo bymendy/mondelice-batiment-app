@@ -319,6 +319,65 @@ final class JournalPrix
     }
 
     /**
+     * Instantane d'une ligne du sous-detail, avec son identifiant.
+     *
+     * @param ArticleComposant $composant
+     * @return array<string, mixed>
+     */
+    public function instantaneLigne(ArticleComposant $composant): array
+    {
+        return ['id' => $composant->getKey()] + $this->instantane($composant, self::CHAMPS_COMPOSANT);
+    }
+
+    /**
+     * Le sous-detail vient d'etre enregistre d'un coup (liste complete des lignes).
+     * Une seule entree, avec les lignes avant et apres ; rien n'est ecrit si rien
+     * ne change.
+     *
+     * @param User $auteur
+     * @param ArticlePrix $article
+     * @param array<int, array<string, mixed>> $avant Lignes avant (instantaneLigne), dans l'ordre.
+     * @param array<int, array<string, mixed>> $apres Lignes apres (instantaneLigne), dans l'ordre.
+     * @return void
+     */
+    public function sousDetailModifie(User $auteur, ArticlePrix $article, array $avant, array $apres): void
+    {
+        if ($avant === $apres) {
+            return;
+        }
+
+        $anciennes = [];
+        foreach ($avant as $ligne) {
+            $anciennes[$ligne['id']] = $ligne;
+        }
+
+        $nouvelles = [];
+        foreach ($apres as $ligne) {
+            $nouvelles[$ligne['id']] = $ligne;
+        }
+
+        $ajoutees = count(array_diff_key($nouvelles, $anciennes));
+        $supprimees = count(array_diff_key($anciennes, $nouvelles));
+        $modifiees = 0;
+
+        foreach ($nouvelles as $id => $ligne) {
+            if (isset($anciennes[$id]) && $anciennes[$id] !== $ligne) {
+                $modifiees++;
+            }
+        }
+
+        $this->ecrire(
+            $auteur,
+            $article,
+            'sous_detail_modifie',
+            "Sous-détail de « {$article->reference} » enregistré ({$ajoutees} ajoutée(s), {$modifiees} modifiée(s), {$supprimees} supprimée(s)).",
+            ['lignes' => $avant],
+            ['lignes' => $apres],
+            ['ajoutees' => $ajoutees, 'modifiees' => $modifiees, 'supprimees' => $supprimees]
+        );
+    }
+
+    /**
      * Ajoute l'entree au journal.
      *
      * @param User $auteur

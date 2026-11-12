@@ -41,7 +41,7 @@ class StoreArticlePrixRequest extends FormRequest
             ],
             'portee' => ['nullable', Rule::in(['prive', 'entreprise'])],
             'designation' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
+            'description' => ['nullable', 'string', 'max:20000', self::regleDescription()],
             'type_article' => ['required', new Enum(TypeArticle::class)],
             'categorie_id' => ['nullable', 'integer', self::regleCategorie()],
             'unite' => ['required', new Enum(UniteArticle::class)],
@@ -52,6 +52,30 @@ class StoreArticlePrixRequest extends FormRequest
             'dtu_lien' => ['nullable', 'url:http,https', 'max:500'],
             'actif' => ['sometimes', 'boolean'],
         ];
+    }
+
+    /** Longueur maximale du descriptif, mise en forme non comptee. */
+    public const MAX_DESCRIPTION = 2400;
+
+    /**
+     * Le descriptif ne depasse pas 2 400 caracteres de texte : les balises de mise
+     * en forme (gras, listes...) ne comptent pas, comme le compteur de l'editeur.
+     *
+     * @return \Closure(string, mixed, \Closure): void
+     */
+    public static function regleDescription(): \Closure
+    {
+        return function (string $attribut, mixed $valeur, \Closure $echec): void {
+            if (! is_string($valeur)) {
+                return;
+            }
+
+            $texte = trim(html_entity_decode(strip_tags($valeur), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+
+            if (mb_strlen($texte) > self::MAX_DESCRIPTION) {
+                $echec('Le descriptif ne doit pas dépasser 2 400 caractères (mise en forme non comptée).');
+            }
+        };
     }
 
     /**

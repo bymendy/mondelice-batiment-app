@@ -120,8 +120,6 @@ final class ControleSeuilsPrixForce
 
         foreach ($composants as $composant) {
             $nombre++;
-            $quantite = (float) $composant->quantite;
-
             if ($composant->type === TypeComposant::MainOeuvre) {
                 $taux = $this->tauxParCode[(string) $composant->qualification] ?? null;
 
@@ -129,7 +127,7 @@ final class ControleSeuilsPrixForce
                     return null;
                 }
 
-                $revientMainOeuvre += $quantite * (float) $taux->cout_revient_ht;
+                $revientMainOeuvre += Arrondi::ligne($composant->quantite, $taux->cout_revient_ht);
 
                 continue;
             }
@@ -138,7 +136,7 @@ final class ControleSeuilsPrixForce
                 return null;
             }
 
-            $revientAutres += $quantite * (float) $composant->prix_achat_ht;
+            $revientAutres += Arrondi::ligne($composant->quantite, $composant->prix_achat_ht);
         }
 
         if ($nombre === 0) {

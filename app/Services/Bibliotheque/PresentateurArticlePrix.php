@@ -89,6 +89,7 @@ final class PresentateurArticlePrix
         $donnees['prix_vente_ttc'] = round($resultat->prixVenteHt * (1 + ((float) $article->taux_tva / 100)), 2);
         $donnees['prix_vente_sous_detail_ht'] = $resultat->prixVenteSousDetailHt;
         $donnees['ecart_prix_force_ht'] = $resultat->ecartPrixForceHt;
+        $donnees['prix_pose_seule_ht'] = $resultat->prixPoseSeuleHt;
 
         if ($this->voirPrixAchat) {
             $donnees['prix_revient_ht'] = $resultat->prixRevientHt;
@@ -96,6 +97,7 @@ final class PresentateurArticlePrix
             $donnees['marge_ht'] = $resultat->margeHt;
             $donnees['coefficient'] = $resultat->coefficient;
             $donnees['taux_marge_pct'] = $resultat->tauxMargePct;
+            $donnees['prix_revient_pose_seule_ht'] = $resultat->prixRevientPoseSeuleHt;
         }
 
         return $donnees;

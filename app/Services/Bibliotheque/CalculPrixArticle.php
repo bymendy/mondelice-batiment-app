@@ -11,17 +11,23 @@ use App\Models\TauxHoraire;
  * Calcule le prix d'un article a partir de son sous-detail (Bibliotheque de prix).
  *
  * Regles (document d'integration, section 6) :
- *  - prix unitaire = somme (quantite x prix de vente) du sous-detail ; le prix
- *    force, s'il existe, prime ;
+ *  - le montant d'une ligne est arrondi au centime (quantite x prix unitaire),
+ *    puis les lignes sont additionnees : le total est toujours la somme des
+ *    montants affiches (voir Arrondi, lot 8) ;
+ *  - prix unitaire de l'article = somme des montants de vente du sous-detail ;
+ *    le prix force, s'il existe, prime ;
  *  - main-d'oeuvre : quantite (heures) x taux de vente de la qualification ;
- *  - prix de revient = somme (quantite x prix d'achat) ; main-d'oeuvre :
- *    quantite x cout de revient de la qualification ;
+ *  - prix de revient = somme des montants de revient (quantite x prix d'achat ;
+ *    main-d'oeuvre : quantite x cout de revient de la qualification) ;
  *  - marge = prix de vente - prix de revient ;
- *  - coefficient = prix de vente / prix de revient (si le revient est positif).
+ *  - coefficient = prix de vente / prix de revient (si le revient est positif) ;
+ *  - pose seule = le sous-detail sans les fournitures (main-d'oeuvre, materiel
+ *    et frais), pour chiffrer un travail dont la fourniture est a la charge du
+ *    client. Le prix force n'y change rien.
  *
  * Le calcul est dynamique : un changement de taux horaire change le prix de
  * tous les articles. Il n'a aucun effet sur les devis, dont les lignes sont des
- * copies figees. Rien n'est stocke ni arrondi avant le resultat final.
+ * copies figees. Rien n'est stocke.
  *
  * Ce service ne lit pas la base : il recoit les lignes et les taux, ce qui le
  * rend testable sans entreprise.
@@ -42,12 +48,17 @@ class CalculPrixArticle
      */
     public function calculer(iterable $composants, array $tauxParCode, ?float $prixForceHt = null): ResultatPrixArticle
     {
-        $vente = 0.0;
-        $revient = 0.0;
+        // Tout est compte en centimes entiers : les montants de ligne sont deja arrondis.
+        $venteCts = 0;
+        $revientCts = 0;
         $revientComplet = true;
+        $poseCts = 0;
+        $revientPoseCts = 0;
+        $revientPoseComplet = true;
 
         foreach ($composants as $composant) {
-            $quantite = (float) $composant->quantite;
+            $quantite = $composant->quantite;
+            $estFourniture = in_array($composant->type, [TypeComposant::FournitureLibre, TypeComposant::FournitureBase], true);
 
             if ($composant->type === TypeComposant::MainOeuvre) {
                 $code = (string) $composant->qualification;
@@ -59,50 +70,62 @@ class CalculPrixArticle
                     );
                 }
 
-                $vente += $quantite * (float) $taux->taux_vente_ht;
-
-                if ($taux->cout_revient_ht === null) {
-                    $revientComplet = false;
-                } else {
-                    $revient += $quantite * (float) $taux->cout_revient_ht;
-                }
-
-                continue;
+                $venteLigne = Arrondi::ligneEnCentimes($quantite, $taux->taux_vente_ht);
+                $revientLigne = $taux->cout_revient_ht === null
+                    ? null
+                    : Arrondi::ligneEnCentimes($quantite, $taux->cout_revient_ht);
+            } else {
+                $venteLigne = Arrondi::ligneEnCentimes($quantite, $composant->prix_vente_ht);
+                $revientLigne = $composant->prix_achat_ht === null
+                    ? null
+                    : Arrondi::ligneEnCentimes($quantite, $composant->prix_achat_ht);
             }
 
-            $vente += $quantite * (float) $composant->prix_vente_ht;
+            $venteCts += $venteLigne;
 
-            if ($composant->prix_achat_ht === null) {
+            if ($revientLigne === null) {
                 $revientComplet = false;
             } else {
-                $revient += $quantite * (float) $composant->prix_achat_ht;
+                $revientCts += $revientLigne;
+            }
+
+            if (! $estFourniture) {
+                $poseCts += $venteLigne;
+
+                if ($revientLigne === null) {
+                    $revientPoseComplet = false;
+                } else {
+                    $revientPoseCts += $revientLigne;
+                }
             }
         }
 
-        $venteSousDetail = round($vente, 2);
-        $prixVente = $prixForceHt !== null ? round($prixForceHt, 2) : $venteSousDetail;
-        $revient = round($revient, 2);
+        $forceCts = $prixForceHt !== null ? (int) round($prixForceHt * 100) : null;
+        $prixVenteCts = $forceCts ?? $venteCts;
 
         $marge = null;
         $coefficient = null;
         $tauxMarge = null;
 
         if ($revientComplet) {
-            $marge = round($prixVente - $revient, 2);
-            $coefficient = $revient > 0 ? round($prixVente / $revient, 2) : null;
-            $tauxMarge = $prixVente > 0 ? round($marge / $prixVente * 100, 2) : null;
+            $margeCts = $prixVenteCts - $revientCts;
+            $marge = Arrondi::euros($margeCts);
+            $coefficient = $revientCts > 0 ? round($prixVenteCts / $revientCts, 2) : null;
+            $tauxMarge = $prixVenteCts > 0 ? round($margeCts / $prixVenteCts * 100, 2) : null;
         }
 
         return new ResultatPrixArticle(
-            prixVenteHt: $prixVente,
-            prixVenteSousDetailHt: $venteSousDetail,
-            prixForceHt: $prixForceHt !== null ? round($prixForceHt, 2) : null,
-            ecartPrixForceHt: $prixForceHt !== null ? round(round($prixForceHt, 2) - $venteSousDetail, 2) : null,
-            prixRevientHt: $revient,
+            prixVenteHt: Arrondi::euros($prixVenteCts),
+            prixVenteSousDetailHt: Arrondi::euros($venteCts),
+            prixForceHt: $forceCts !== null ? Arrondi::euros($forceCts) : null,
+            ecartPrixForceHt: $forceCts !== null ? Arrondi::euros($forceCts - $venteCts) : null,
+            prixRevientHt: Arrondi::euros($revientCts),
             revientComplet: $revientComplet,
             margeHt: $marge,
             coefficient: $coefficient,
             tauxMargePct: $tauxMarge,
+            prixPoseSeuleHt: Arrondi::euros($poseCts),
+            prixRevientPoseSeuleHt: $revientPoseComplet ? Arrondi::euros($revientPoseCts) : null,
         );
     }
 }

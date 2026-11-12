@@ -65,6 +65,9 @@ final class PresentateurHistorique
     }
 
     /**
+     * Retire les champs sensibles d'un bloc `avant` ou `apres`, a tous les niveaux
+     * (un sous-detail enregistre d'un coup contient une liste de lignes).
+     *
      * @param mixed $bloc Valeurs `avant` ou `apres` d'une entree.
      * @return array{0: mixed, 1: bool} Le bloc sans les champs sensibles, et vrai si on en a retire.
      */
@@ -76,10 +79,17 @@ final class PresentateurHistorique
 
         $retire = false;
 
-        foreach (JournalPrix::CHAMPS_SENSIBLES as $champ) {
-            if (array_key_exists($champ, $bloc)) {
-                unset($bloc[$champ]);
+        foreach ($bloc as $cle => $valeur) {
+            if (in_array($cle, JournalPrix::CHAMPS_SENSIBLES, true)) {
+                unset($bloc[$cle]);
                 $retire = true;
+
+                continue;
+            }
+
+            if (is_array($valeur)) {
+                [$bloc[$cle], $dedans] = $this->retirerSensibles($valeur);
+                $retire = $retire || $dedans;
             }
         }
 

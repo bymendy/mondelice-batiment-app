@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\RemplacerSousDetailRequest;
 use App\Http\Requests\ReordonnerComposantsRequest;
 use App\Http\Requests\StoreComposantRequest;
 use App\Http\Requests\UpdateComposantRequest;
@@ -12,10 +13,12 @@ use App\Models\User;
 use App\Services\Bibliotheque\JournalPrix;
 use App\Services\Bibliotheque\PresentateurArticlePrix;
 use App\Services\Bibliotheque\PresentateurComposant;
+use App\Services\Bibliotheque\PrixVenteFourniture;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -35,8 +38,10 @@ use Illuminate\Validation\ValidationException;
  */
 class ArticleComposantController extends Controller implements HasMiddleware
 {
-    public function __construct(private readonly JournalPrix $journal)
-    {
+    public function __construct(
+        private readonly JournalPrix $journal,
+        private readonly PrixVenteFourniture $prixVente,
+    ) {
     }
 
     /**
@@ -46,8 +51,8 @@ class ArticleComposantController extends Controller implements HasMiddleware
     {
         return [
             new Middleware('can:bibliotheque.consulter', only: ['index']),
-            new Middleware('can:bibliotheque.personnaliser', only: ['store', 'update', 'destroy', 'reordonner']),
-            new Middleware(\App\Http\Middleware\BibliothequePrixModifiable::class, only: ['store', 'update', 'destroy', 'reordonner']),
+            new Middleware('can:bibliotheque.personnaliser', only: ['store', 'update', 'destroy', 'reordonner', 'remplacer']),
+            new Middleware(\App\Http\Middleware\BibliothequePrixModifiable::class, only: ['store', 'update', 'destroy', 'reordonner', 'remplacer']),
         ];
     }
 
@@ -79,6 +84,9 @@ class ArticleComposantController extends Controller implements HasMiddleware
             $taux = TauxHoraire::indexesParCode()[$donnees['qualification']];
             $donnees['unite'] = 'h';
             $donnees['designation'] = ! empty($donnees['designation']) ? $donnees['designation'] : $taux->libelle;
+        } else {
+            // Prix de vente saisi, sinon calcule depuis le prix d'achat avec la marge par defaut.
+            $donnees['prix_vente_ht'] = $this->prixVente->resoudre($donnees['prix_vente_ht'] ?? null, $donnees['prix_achat_ht'] ?? null);
         }
 
         $utilisateur = $request->user();
@@ -140,6 +148,107 @@ class ArticleComposantController extends Controller implements HasMiddleware
         });
 
         return response()->json($this->sousDetail($request->user(), $articlePrix));
+    }
+
+    /**
+     * Enregistre le sous-detail complet en une seule operation (tout ou rien).
+     *
+     * Corps : `composants`, la liste des lignes dans l'ordre voulu, chacune decrite
+     * en entier. Avec `id`, la ligne existante est mise a jour (son type ne change
+     * pas) ; sans `id`, elle est creee ; une ligne existante absente de la liste est
+     * supprimee. Le prix de vente d'une fourniture peut etre omis si le prix d'achat
+     * est donne. Une seule entree de journal (`sous_detail_modifie`).
+     *
+     * @param RemplacerSousDetailRequest $request
+     * @param ArticlePrix $articlePrix
+     * @return JsonResponse Le sous-detail et l'article recalcule.
+     */
+    public function remplacer(RemplacerSousDetailRequest $request, ArticlePrix $articlePrix): JsonResponse
+    {
+        $utilisateur = $request->user();
+        $lignes = array_values((array) $request->input('composants', []));
+        $taux = TauxHoraire::indexesParCode();
+
+        DB::transaction(function () use ($lignes, $taux, $articlePrix, $utilisateur): void {
+            $existants = ArticleComposant::query()
+                ->where('article_id', $articlePrix->id)
+                ->orderBy('ordre')
+                ->orderBy('id')
+                ->get()
+                ->keyBy('id');
+            $avant = $existants->map(fn (ArticleComposant $c): array => $this->journal->instantaneLigne($c))->values()->all();
+            $gardees = [];
+
+            foreach ($lignes as $position => $ligne) {
+                $donnees = $this->donneesLigne($ligne, $position, $taux);
+                $id = isset($ligne['id']) && is_numeric($ligne['id']) ? (int) $ligne['id'] : null;
+
+                if ($id !== null) {
+                    $existants->get($id)->update(Arr::except($donnees, ['type']));
+                    $gardees[$id] = true;
+                } else {
+                    $articlePrix->composants()->create($donnees);
+                }
+            }
+
+            foreach ($existants as $id => $composant) {
+                if (! isset($gardees[$id])) {
+                    $composant->delete();
+                }
+            }
+
+            $apres = ArticleComposant::query()
+                ->where('article_id', $articlePrix->id)
+                ->orderBy('ordre')
+                ->orderBy('id')
+                ->get()
+                ->map(fn (ArticleComposant $c): array => $this->journal->instantaneLigne($c))
+                ->values()
+                ->all();
+
+            $this->journal->sousDetailModifie($utilisateur, $articlePrix, $avant, $apres);
+        });
+
+        return response()->json($this->sousDetail($utilisateur, $articlePrix));
+    }
+
+    /**
+     * Champs a enregistrer pour une ligne d'un sous-detail complet (la ligne est deja validee).
+     *
+     * @param array<string, mixed> $ligne
+     * @param int $position Position dans la liste (0 pour la premiere).
+     * @param array<string, TauxHoraire> $taux Taux de l'entreprise, par code.
+     * @return array<string, mixed>
+     */
+    private function donneesLigne(array $ligne, int $position, array $taux): array
+    {
+        $commun = ['quantite' => $ligne['quantite'], 'ordre' => $position + 1];
+
+        if ($ligne['type'] === 'main_oeuvre') {
+            $designation = $ligne['designation'] ?? null;
+
+            return $commun + [
+                'type' => 'main_oeuvre',
+                'qualification' => $ligne['qualification'],
+                'designation' => ($designation !== null && $designation !== '') ? $designation : $taux[$ligne['qualification']]->libelle,
+                'unite' => 'h',
+                'prix_achat_ht' => null,
+                'prix_vente_ht' => null,
+            ];
+        }
+
+        return $commun + [
+            'type' => $ligne['type'],
+            'qualification' => null,
+            'designation' => $ligne['designation'],
+            'unite' => $ligne['unite'],
+            'prix_achat_ht' => $ligne['prix_achat_ht'] ?? null,
+            'prix_vente_ht' => $this->prixVente->resoudre(
+                $ligne['prix_vente_ht'] ?? null,
+                $ligne['prix_achat_ht'] ?? null,
+                "composants.{$position}.prix_vente_ht"
+            ),
+        ];
     }
 
     /**

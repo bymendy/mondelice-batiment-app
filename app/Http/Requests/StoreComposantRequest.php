@@ -47,7 +47,20 @@ class StoreComposantRequest extends FormRequest
      */
     public function rules(): array
     {
-        $mainOeuvre = $this->input('type') === 'main_oeuvre';
+        return self::reglesLigne($this->all());
+    }
+
+    /**
+     * Regles d'une ligne du sous-detail selon son type. Le prix de vente d'une
+     * fourniture est facultatif ici : s'il manque, le controleur le calcule depuis
+     * le prix d'achat (PrixVenteFourniture) ou refuse la ligne.
+     *
+     * @param array<string, mixed> $donnees Champs de la ligne.
+     * @return array<string, mixed>
+     */
+    public static function reglesLigne(array $donnees): array
+    {
+        $mainOeuvre = ($donnees['type'] ?? null) === 'main_oeuvre';
 
         return [
             'type' => ['required', Rule::in(self::TYPES)],
@@ -66,7 +79,7 @@ class StoreComposantRequest extends FormRequest
                 : ['nullable', 'numeric', 'min:0', 'max:' . self::MAX_QUANTITE],
             'prix_vente_ht' => $mainOeuvre
                 ? ['prohibited']
-                : ['required', 'numeric', 'min:0', 'max:' . self::MAX_QUANTITE],
+                : ['nullable', 'numeric', 'min:0', 'max:' . self::MAX_QUANTITE],
             'ordre' => ['nullable', 'integer', 'min:0', 'max:65535'],
         ];
     }

@@ -92,6 +92,7 @@ Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
         ->group(function () {
             Route::get('/', 'index');
             Route::post('/', 'store');
+            Route::put('/', 'remplacer');
             Route::put('ordre', 'reordonner');
             Route::put('{composant}', 'update')->whereNumber('composant');
             Route::delete('{composant}', 'destroy')->whereNumber('composant');

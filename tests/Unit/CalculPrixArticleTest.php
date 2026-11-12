@@ -182,14 +182,55 @@ class CalculPrixArticleTest extends TestCase
     }
 
     #[Test]
-    public function l_arrondi_se_fait_une_seule_fois_sur_le_total(): void
+    public function chaque_ligne_est_arrondie_au_centime_puis_les_lignes_sont_additionnees(): void
     {
-        // 0,3333 x 10 = 3,333 -> 3,33 ; deux lignes : 6,666 -> 6,67 (et non 3,33 + 3,33 = 6,66).
+        // 0,3333 x 10 = 3,333 -> 3,33 par ligne ; deux lignes : 3,33 + 3,33 = 6,66 (et non 6,67).
         $composants = [$this->fourniture(0.3333, 10.00, 1.00), $this->fourniture(0.3333, 10.00, 1.00)];
 
         $resultat = (new CalculPrixArticle())->calculer($composants, []);
 
-        $this->assertSame(6.67, $resultat->prixVenteHt);
+        $this->assertSame(6.66, $resultat->prixVenteHt);
+    }
+
+    #[Test]
+    public function l_arrondi_d_une_ligne_est_a_la_hausse_a_la_moitie(): void
+    {
+        // 1 x 1,005 = 1,005 -> 1,01 (demi vers le haut, sans erreur de virgule flottante).
+        $resultat = (new CalculPrixArticle())->calculer([$this->fourniture(1, 1.005, 0.50)], []);
+
+        $this->assertSame(1.01, $resultat->prixVenteHt);
+    }
+
+    #[Test]
+    public function trois_lignes_a_1_004_font_3_00(): void
+    {
+        $composants = [
+            $this->fourniture(1, 1.004, 0.50),
+            $this->fourniture(1, 1.004, 0.50),
+            $this->fourniture(1, 1.004, 0.50),
+        ];
+
+        $resultat = (new CalculPrixArticle())->calculer($composants, []);
+
+        $this->assertSame(3.00, $resultat->prixVenteHt);
+    }
+
+    #[Test]
+    public function le_prix_pose_seule_exclut_les_fournitures(): void
+    {
+        $composants = [
+            $this->mo(2),                                                     // 2 h x 60 = 120 (revient 80)
+            $this->fourniture(1, 12.00, 8.00, TypeComposant::Materiel),       // 12 (revient 8)
+            $this->fourniture(2, 5.00, 3.00, TypeComposant::Frais),           // 10 (revient 6)
+            $this->fourniture(3, 20.00, 10.00),                               // fourniture : exclue
+            $this->fourniture(1, 7.00, 4.00, TypeComposant::FournitureBase),  // fourniture : exclue
+        ];
+
+        $resultat = (new CalculPrixArticle())->calculer($composants, ['ouvrier' => $this->taux('ouvrier', 60, 40)]);
+
+        $this->assertSame(142.00, $resultat->prixPoseSeuleHt);
+        $this->assertSame(94.00, $resultat->prixRevientPoseSeuleHt);
+        $this->assertSame(209.00, $resultat->prixVenteHt);
     }
 
     #[Test]

@@ -39,6 +39,11 @@ class Parametre extends Model
             'defaut' => false,
             'regle' => 'boolean',
         ],
+        'marge_fournitures_defaut' => [
+            'libelle' => 'Marge par défaut sur les fournitures (en % du prix de vente), utilisée quand on ne saisit que le prix d\'achat',
+            'defaut' => null,
+            'regle' => 'nullable|numeric|min:0|max:99.99',
+        ],
     ];
 
     /**
@@ -73,6 +78,16 @@ class Parametre extends Model
     public static function ecrire(string $cle, mixed $valeur): self
     {
         self::verifier($cle);
+
+        // Remettre un reglage facultatif a null = supprimer sa ligne : la valeur par defaut reprend.
+        if ($valeur === null) {
+            static::query()->where('cle', $cle)->delete();
+
+            $vide = new static(['cle' => $cle]);
+            $vide->valeur = null;
+
+            return $vide;
+        }
 
         $ligne = static::query()->firstOrNew(['cle' => $cle]);
         $ligne->valeur = $valeur;
