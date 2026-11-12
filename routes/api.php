@@ -122,3 +122,15 @@ Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
     Route::get('parametres/seuils/historique', [\App\Http\Controllers\SeuilTarifaireController::class, 'historique']);
     Route::put('parametres/seuils/{type}', [\App\Http\Controllers\SeuilTarifaireController::class, 'update']);
 });
+
+/**
+ * Adresses des clients et controle des doublons (module Clients / CRM,
+ * lot O0). Permissions appliquees par les controleurs (HasMiddleware).
+ */
+Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
+    Route::get('clients/{client}/adresses', [\App\Http\Controllers\AdresseController::class, 'index']);
+    Route::post('clients/{client}/adresses', [\App\Http\Controllers\AdresseController::class, 'store']);
+    Route::put('adresses/{adresse}', [\App\Http\Controllers\AdresseController::class, 'update']);
+    Route::delete('adresses/{adresse}', [\App\Http\Controllers\AdresseController::class, 'destroy']);
+    Route::get('doublons/clients', \App\Http\Controllers\DoublonClientController::class);
+});

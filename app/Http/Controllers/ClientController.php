@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\TypeAdresse;
 use App\Http\Requests\StoreClientRequest;
 use App\Http\Requests\UpdateClientRequest;
 use App\Models\Client;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 
@@ -64,7 +66,7 @@ class ClientController extends Controller implements HasMiddleware
                     ->orWhere('raison_sociale', 'ilike', "%{$terme}%")
                     ->orWhere('email', 'ilike', "%{$terme}%")
                     ->orWhere('telephone', 'ilike', "%{$terme}%")
-                    ->orWhere('ville', 'ilike', "%{$terme}%");
+                    ->orWhereHas('adresses', fn ($a) => $a->where('ville', 'ilike', "%{$terme}%"));
             });
         }
 
@@ -81,7 +83,24 @@ class ClientController extends Controller implements HasMiddleware
      */
     public function store(StoreClientRequest $request): JsonResponse
     {
-        return response()->json(Client::create($request->validated()), 201);
+        $donnees = $request->validated();
+        $adresse = array_filter(
+            $donnees['adresse_facturation'] ?? [],
+            fn ($v) => $v !== null && $v !== ''
+        );
+        unset($donnees['adresse_facturation']);
+
+        $client = DB::transaction(function () use ($donnees, $adresse): Client {
+            $client = Client::create($donnees);
+
+            if ($adresse !== []) {
+                $client->adresses()->create(array_merge($adresse, ['type' => TypeAdresse::Facturation->value]));
+            }
+
+            return $client;
+        });
+
+        return response()->json($client->load('adresses'), 201);
     }
 
     /**
@@ -92,7 +111,7 @@ class ClientController extends Controller implements HasMiddleware
      */
     public function show(Client $client): JsonResponse
     {
-        return response()->json($client->load('contacts'));
+        return response()->json($client->load(['contacts', 'adresses']));
     }
 
     /**

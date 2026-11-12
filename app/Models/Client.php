@@ -8,6 +8,7 @@ use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 use LogicException;
@@ -31,10 +32,8 @@ use LogicException;
  * @property string|null $raison_sociale
  * @property string|null $siret
  * @property string|null $tva_intra
- * @property string|null $adresse
- * @property string|null $code_postal
- * @property string|null $ville
  * @property string|null $telephone
+ * @property string|null $telephone_normalise
  * @property string|null $email
  * @property SourceLead|null $source_lead
  * @property \Illuminate\Support\Carbon|null $ne_plus_demarcher_le
@@ -55,9 +54,6 @@ class Client extends Model
         'raison_sociale',
         'siret',
         'tva_intra',
-        'adresse',
-        'code_postal',
-        'ville',
         'telephone',
         'email',
         'source_lead',
@@ -70,6 +66,30 @@ class Client extends Model
         'source_lead' => SourceLead::class,
         'ne_plus_demarcher_le' => 'date',
     ];
+
+    /**
+     * Les adresses du client (une de facturation, plusieurs de chantier).
+     *
+     * @return HasMany<Adresse>
+     */
+    public function adresses(): HasMany
+    {
+        return $this->hasMany(Adresse::class);
+    }
+
+    /**
+     * Garde a jour le telephone normalise (sert a detecter les doublons).
+     *
+     * @return void
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (Client $client): void {
+            if (! $client->exists || $client->isDirty('telephone')) {
+                $client->telephone_normalise = \App\Support\Telephone::normaliser($client->telephone);
+            }
+        });
+    }
 
     /**
      * Nom a afficher partout (liste, devis, chantier) : "NOM Prenom" pour
