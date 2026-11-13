@@ -34,7 +34,7 @@ class RolePermissionMatrixTest extends TestCase
     private array $expectedMatrix = [
         'Direction' => [
             'clients.voir', 'contacts.voir', 'clients.creer', 'contacts.creer', 'clients.modifier', 'contacts.modifier', 'clients.supprimer', 'contacts.supprimer',
-            'opportunites.voir', 'opportunites.creer', 'opportunites.modifier', 'opportunites.supprimer',
+            'opportunites.voir', 'opportunites.creer', 'opportunites.modifier', 'opportunites.supprimer', 'opportunites.voir_toutes',
             'devis.voir', 'devis.creer', 'devis.modifier', 'devis.supprimer', 'devis.envoyer',
             'bibliotheque.consulter', 'bibliotheque.personnaliser', 'bibliotheque.supprimer', 'bibliotheque.voir_prix_achat', 'bibliotheque.publier_entreprise',
             'chantiers.voir', 'chantiers.creer', 'chantiers.modifier', 'chantiers.supprimer',
@@ -163,7 +163,7 @@ class RolePermissionMatrixTest extends TestCase
             ->sort()
             ->values();
 
-        $this->assertEquals(61, $unionFromMatrix->count());
-        $this->assertEquals(61, \Spatie\Permission\Models\Permission::count());
+        $this->assertEquals(62, $unionFromMatrix->count());
+        $this->assertEquals(62, \Spatie\Permission\Models\Permission::count());
     }
 }

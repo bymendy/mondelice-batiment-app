@@ -37,7 +37,7 @@ class PermissionSeeder extends Seeder
         $modules = [
             'clients' => ['voir', 'creer', 'modifier', 'supprimer'],
             'contacts' => ['voir', 'creer', 'modifier', 'supprimer'],
-            'opportunites' => ['voir', 'creer', 'modifier', 'supprimer'],
+            'opportunites' => ['voir', 'creer', 'modifier', 'supprimer', 'voir_toutes'],
             'devis' => ['voir', 'creer', 'modifier', 'supprimer', 'envoyer'],
             'bibliotheque' => ['consulter', 'personnaliser', 'supprimer', 'voir_prix_achat', 'publier_entreprise'],
             'chantiers' => ['voir', 'creer', 'modifier', 'supprimer'],
@@ -73,7 +73,7 @@ class PermissionSeeder extends Seeder
             'Direction' => [
                 'clients' => ['voir', 'creer', 'modifier', 'supprimer'],
                 'contacts' => ['voir', 'creer', 'modifier', 'supprimer'],
-                'opportunites' => ['voir', 'creer', 'modifier', 'supprimer'],
+                'opportunites' => ['voir', 'creer', 'modifier', 'supprimer', 'voir_toutes'],
                 'devis' => ['voir', 'creer', 'modifier', 'supprimer', 'envoyer'],
                 'bibliotheque' => ['consulter', 'personnaliser', 'supprimer', 'voir_prix_achat', 'publier_entreprise'],
                 'chantiers' => ['voir', 'creer', 'modifier', 'supprimer'],

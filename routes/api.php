@@ -145,3 +145,15 @@ Route::middleware(['auth:sanctum', 'require.mfa'])->prefix('pipeline')->group(fu
     Route::apiResource('sources', \App\Http\Controllers\SourceController::class)->except(['show']);
     Route::apiResource('motifs', \App\Http\Controllers\MotifController::class)->except(['show']);
 });
+
+/**
+ * Affaires du pipeline commercial (module Clients / CRM, lot O2).
+ * Permissions appliquees par le controleur.
+ */
+Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
+    Route::apiResource('opportunites', \App\Http\Controllers\OpportuniteController::class)
+        ->parameters(['opportunites' => 'opportunite'])
+        ->whereNumber('opportunite');
+    Route::post('opportunites/{opportunite}/etape', [\App\Http\Controllers\OpportuniteController::class, 'changerEtape'])
+        ->whereNumber('opportunite');
+});
