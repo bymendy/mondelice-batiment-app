@@ -157,3 +157,8 @@ Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
     Route::post('opportunites/{opportunite}/etape', [\App\Http\Controllers\OpportuniteController::class, 'changerEtape'])
         ->whereNumber('opportunite');
 });
+
+/**
+ * Vue Pipeline (Kanban) : affaires groupees par etape (module Clients / CRM, lot O3).
+ */
+Route::middleware(['auth:sanctum', 'require.mfa'])->get('pipeline/kanban', [\App\Http\Controllers\PipelineController::class, 'kanban']);
