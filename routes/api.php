@@ -162,3 +162,19 @@ Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
  * Vue Pipeline (Kanban) : affaires groupees par etape (module Clients / CRM, lot O3).
  */
 Route::middleware(['auth:sanctum', 'require.mfa'])->get('pipeline/kanban', [\App\Http\Controllers\PipelineController::class, 'kanban']);
+
+/**
+ * Devis, lots et lignes (module Devis, lot D1).
+ * Permissions appliquees par les controleurs.
+ */
+Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
+    Route::apiResource('devis', \App\Http\Controllers\DevisController::class)
+        ->parameters(['devis' => 'devis'])
+        ->whereNumber('devis');
+    Route::post('devis/{devis}/lots', [\App\Http\Controllers\LotDevisController::class, 'store'])->whereNumber('devis');
+    Route::put('lots-devis/{lot}', [\App\Http\Controllers\LotDevisController::class, 'update'])->whereNumber('lot');
+    Route::delete('lots-devis/{lot}', [\App\Http\Controllers\LotDevisController::class, 'destroy'])->whereNumber('lot');
+    Route::post('devis/{devis}/lignes', [\App\Http\Controllers\LigneDevisController::class, 'store'])->whereNumber('devis');
+    Route::put('lignes-devis/{ligne}', [\App\Http\Controllers\LigneDevisController::class, 'update'])->whereNumber('ligne');
+    Route::delete('lignes-devis/{ligne}', [\App\Http\Controllers\LigneDevisController::class, 'destroy'])->whereNumber('ligne');
+});

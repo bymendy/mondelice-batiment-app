@@ -53,6 +53,14 @@ class LigneDevis extends Model
         'ordre',
     ];
 
+    /**
+     * Le prix de revient ne sort jamais dans les reponses de l'API tant que
+     * la permission devis.voir_marge n'est pas en place (lot D4).
+     *
+     * @var list<string>
+     */
+    protected $hidden = ['prix_revient_unitaire'];
+
     protected $casts = [
         'quantite' => 'decimal:4',
         'prix_unitaire_ht' => 'decimal:2',
