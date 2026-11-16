@@ -187,3 +187,11 @@ Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
     Route::post('devis/{devis}/envoyer', [\App\Http\Controllers\DevisStatutController::class, 'envoyer'])->whereNumber('devis');
     Route::post('devis/{devis}/statut', [\App\Http\Controllers\DevisStatutController::class, 'changer'])->whereNumber('devis');
 });
+
+/**
+ * Ligne de devis depuis la bibliotheque de prix (module Devis, lot D3).
+ * Permissions appliquees par le controleur.
+ */
+Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
+    Route::post('devis/{devis}/lignes/depuis-article', [\App\Http\Controllers\LigneDevisArticleController::class, 'store'])->whereNumber('devis');
+});

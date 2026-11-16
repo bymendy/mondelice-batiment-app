@@ -102,4 +102,14 @@ class LigneDevis extends Model
     {
         return $this->belongsTo(ArticlePrix::class)->withTrashed();
     }
+
+    /**
+     * Sous-detail fige de la ligne (copie des composants de l'article).
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany<LigneDevisComposant, $this>
+     */
+    public function composants(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(LigneDevisComposant::class, 'ligne_devis_id')->orderBy('ordre')->orderBy('id');
+    }
 }

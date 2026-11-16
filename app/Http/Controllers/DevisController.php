@@ -176,7 +176,7 @@ class DevisController extends Controller implements HasMiddleware
      */
     private function fiche(Devis $devis): array
     {
-        $devis->load(['client', 'opportunite:id,titre', 'adresseChantier', 'auteur:id,name', 'lots', 'lignes']);
+        $devis->load(['client', 'opportunite:id,titre', 'adresseChantier', 'auteur:id,name', 'lots', 'lignes.composants']);
 
         return array_merge($devis->toArray(), [
             'detail_totaux' => (new CalculTotauxDevis())->calculer($devis->lignes),
