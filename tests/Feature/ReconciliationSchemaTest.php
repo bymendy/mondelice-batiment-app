@@ -5,8 +5,8 @@ namespace Tests\Feature;
 use App\Models\ArticlePrix;
 use App\Models\Client;
 use App\Models\Opportunite;
-use App\Models\Quote;
-use App\Models\QuoteLine;
+use App\Models\Devis;
+use App\Models\LigneDevis;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use Tests\Concerns\InteractsWithTenants;
@@ -47,8 +47,8 @@ class ReconciliationSchemaTest extends TestCase
     public function test_les_cles_etrangeres_pointent_vers_les_nouvelles_tables(): void
     {
         $this->assertSame('clients', $this->tableCible('opportunites', 'client_id'));
-        $this->assertSame('clients', $this->tableCible('quotes', 'client_id'));
-        $this->assertSame('articles_prix', $this->tableCible('quote_lines', 'article_prix_id'));
+        $this->assertSame('clients', $this->tableCible('devis', 'client_id'));
+        $this->assertSame('articles_prix', $this->tableCible('lignes_devis', 'article_prix_id'));
     }
 
     public function test_les_relations_fonctionnent_de_bout_en_bout(): void
@@ -68,21 +68,21 @@ class ReconciliationSchemaTest extends TestCase
             ]);
 
             $opportunite = Opportunite::create(['client_id' => $contact->id, 'titre' => 'Renovation']);
-            $devis = Quote::create([
+            $devis = Devis::create([
                 'client_id' => $contact->id,
-                'opportunity_id' => $opportunite->id,
+                'opportunite_id' => $opportunite->id,
             ]);
-            $ligne = QuoteLine::create([
-                'quote_id' => $devis->id,
+            $ligne = LigneDevis::create([
+                'devis_id' => $devis->id,
                 'article_prix_id' => $article->id,
-                'designation' => 'Pose de carrelage',
-                'unit_price_ht' => 40,
+                'libelle' => 'Pose de carrelage',
+                'prix_unitaire_ht' => 40,
             ]);
 
             $this->assertTrue($opportunite->client->is($contact));
             $this->assertTrue($devis->client->is($contact));
             $this->assertTrue($ligne->articlePrix->is($article));
-            $this->assertCount(1, $devis->lines);
+            $this->assertCount(1, $devis->lignes);
         });
     }
 }

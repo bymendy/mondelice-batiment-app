@@ -166,11 +166,11 @@ class Opportunite extends Model
     /**
      * Les devis rattaches a l'affaire.
      *
-     * @return HasMany<Quote>
+     * @return HasMany<Devis>
      */
     public function devis(): HasMany
     {
-        return $this->hasMany(Quote::class, 'opportunity_id');
+        return $this->hasMany(Devis::class, 'opportunite_id');
     }
 
     /**

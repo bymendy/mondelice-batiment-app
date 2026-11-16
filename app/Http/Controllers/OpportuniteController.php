@@ -189,7 +189,7 @@ class OpportuniteController extends Controller implements HasMiddleware
     {
         $affaire = $this->perimetre($request)->findOrFail($opportunite);
 
-        if (DB::table('quotes')->where('opportunity_id', $affaire->getKey())->exists()) {
+        if (DB::table('devis')->whereNull('deleted_at')->where('opportunite_id', $affaire->getKey())->exists()) {
             throw ValidationException::withMessages([
                 'opportunite' => 'Des devis sont rattachés à cette affaire : classez-la sans suite plutôt que la supprimer.',
             ]);

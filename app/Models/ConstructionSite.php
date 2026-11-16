@@ -35,10 +35,10 @@ class ConstructionSite extends Model
     ];
 
     /**
-     * @return BelongsTo<Quote, ConstructionSite>
+     * @return BelongsTo<Devis, ConstructionSite>
      */
     public function quote(): BelongsTo
     {
-        return $this->belongsTo(Quote::class);
+        return $this->belongsTo(Devis::class, 'quote_id');
     }
 }

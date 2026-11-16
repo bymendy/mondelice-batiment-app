@@ -355,8 +355,8 @@ class PipelineReglagesTest extends TestCase
         $affaire = $this->chez(fn () => Opportunite::create(['client_id' => $client->id, 'titre' => 'Toiture']));
 
         $this->chez(function () use ($client, $affaire): void {
-            $devis = \App\Models\Quote::create(['client_id' => $client->id, 'opportunity_id' => $affaire->id]);
-            $this->assertTrue($devis->opportunity->is($affaire));
+            $devis = \App\Models\Devis::create(['client_id' => $client->id, 'opportunite_id' => $affaire->id]);
+            $this->assertTrue($devis->opportunite->is($affaire));
             $this->assertCount(1, $affaire->devis);
         });
     }
