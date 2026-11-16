@@ -3,14 +3,23 @@
 namespace App\States\Devis;
 
 /**
- * Devis refusé par le client — statut final négatif.
- * Famille de badge UI : Critique / bloquant (rouge, verrouillé niveau
- * système, non personnalisable en marque blanche SaaS).
+ * Devis refusé par le client.
+ * Macro-état : Décidé. Famille de badge UI : Échec (rouge).
  *
- * Statut final : aucune transition sortante déclarée.
+ * Passages autorisés : voir DevisState::config().
  */
 class Refuse extends DevisState
 {
+    /**
+     * Nom enregistré dans la colonne `statut` de la table `devis`.
+     *
+     * @var string|null
+     */
+    public static ?string $name = 'refuse';
+
+    /**
+     * @return string
+     */
     public function label(): string
     {
         return 'Refusé';

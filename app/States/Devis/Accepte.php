@@ -3,17 +3,23 @@
 namespace App\States\Devis;
 
 /**
- * Devis accepté par le client — statut final positif.
- * Famille de badge UI : Positif / validé (vert, verrouillé niveau système,
- * non personnalisable en marque blanche SaaS).
+ * Devis accepté : en ligne par le client, ou à la main avec preuve. Ouvre la suite du workflow.
+ * Macro-état : Décidé. Famille de badge UI : Succès (vert).
  *
- * Déclenche AUTO-02 (tâche 3.9) : création du Chantier + acompte + dossier
- * documents. Aucune transition sortante déclarée : statut final, modifiable
- * uniquement par un rôle supérieur si une correction manuelle est needed
- * (règle générale des statuts finaux, section 7 du document de référence).
+ * Passages autorisés : voir DevisState::config().
  */
 class Accepte extends DevisState
 {
+    /**
+     * Nom enregistré dans la colonne `statut` de la table `devis`.
+     *
+     * @var string|null
+     */
+    public static ?string $name = 'accepte';
+
+    /**
+     * @return string
+     */
     public function label(): string
     {
         return 'Accepté';

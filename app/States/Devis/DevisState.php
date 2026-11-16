@@ -8,25 +8,20 @@ use Spatie\ModelStates\StateConfig;
 /**
  * Machine à états du Devis (module Devis, tâche 3.6).
  *
- * Statuts gérés : EnPreparation -> Envoye -> Relance1 -> Relance2 -> Negociation,
- * avec Accepte / Refuse / Expire atteignables depuis Envoye, Relance1, Relance2
- * ou Negociation (un client peut accepter/refuser dès l'envoi, sans attendre
- * les relances — règle confirmée le 25/10/2026).
+ * 13 statuts en 3 macro-états :
+ *  - brouillon : En préparation, En attente de dérogation, Prêt à envoyer ;
+ *  - envoyé : Envoyé, Délivré, Consulté, Relance 1, Relance 2, Négociation ;
+ *  - décidé : Accepté, Refusé, Expiré, Annulé.
  *
- * Usage sur le modèle Eloquent :
- *   protected $casts = ['statut' => DevisState::class];
+ * La colonne `statut` de la table `devis` garde le nom du statut
+ * (`en_preparation`, `envoye`, `relance_1`...). Le modèle Devis ne la convertit
+ * pas en objet : le service ChangementStatutDevis demande à cette
+ * configuration si un passage est permis (isTransitionAllowed avec les noms).
+ * Toute transition absente d'ici est interdite.
  *
- * Changer de statut :
- *   $devis->statut->transitionTo(Envoye::class);
- *
- * @throws \Spatie\ModelStates\Exceptions\TransitionNotFound
- *   Levée par transitionTo() si la transition demandée n'est pas déclarée
- *   dans config() ci-dessous — c'est le verrou recherché (ex. impossible de
- *   facturer un devis non accepté, de façon générale : impossible de sauter
- *   directement vers un statut non autorisé).
- *   Pour tester sans lever d'exception (ex. pour griser un bouton dans l'UI),
- *   utiliser DevisState::config()->isTransitionAllowed(Depuis::class, Vers::class)
- *   qui retourne un booléen.
+ * Passage humain vers « Envoyé » : endpoint dédié (POST /devis/{id}/envoyer),
+ * jamais une mise à jour générique du statut (décision 2 du cadre IA
+ * Responsable, voir Mondelice_Developpement_IA_Responsable.tex).
  */
 abstract class DevisState extends State
 {
@@ -38,33 +33,38 @@ abstract class DevisState extends State
     abstract public function label(): string;
 
     /**
-     * Déclare le statut par défaut à la création d'un Devis, et la liste
-     * exhaustive des transitions autorisées. Toute transition absente d'ici
-     * est interdite par le framework (spatie/laravel-model-states).
+     * Déclare le statut par défaut et la liste exhaustive des passages
+     * autorisés (spatie/laravel-model-states).
      *
      * @return StateConfig
      */
     public static function config(): StateConfig
     {
-        return parent::config()
+        $apresEnvoi = [Envoye::class, Delivre::class, Consulte::class, Relance1::class, Relance2::class, Negociation::class];
+
+        $config = parent::config()
             ->default(EnPreparation::class)
-            // Chaîne de relance normale
-            ->allowTransition(EnPreparation::class, Envoye::class)
-            ->allowTransition(Envoye::class, Relance1::class)
+            // Brouillon
+            ->allowTransition(EnPreparation::class, EnAttenteDerogation::class)
+            ->allowTransition(EnAttenteDerogation::class, EnPreparation::class)
+            ->allowTransition(EnAttenteDerogation::class, PretAEnvoyer::class)
+            ->allowTransition(EnPreparation::class, PretAEnvoyer::class)
+            ->allowTransition(PretAEnvoyer::class, EnPreparation::class)
+            // Envoi : action humaine explicite
+            ->allowTransition([EnPreparation::class, PretAEnvoyer::class], Envoye::class)
+            // Envoi suivi et relances (automatiques, tâche 3.7)
+            ->allowTransition(Envoye::class, Delivre::class)
+            ->allowTransition([Envoye::class, Delivre::class], Consulte::class)
+            ->allowTransition([Envoye::class, Delivre::class, Consulte::class], Relance1::class)
             ->allowTransition(Relance1::class, Relance2::class)
-            ->allowTransition(Relance2::class, Negociation::class)
-            // Issues possibles depuis n'importe quel statut "en attente de réponse client"
-            ->allowTransition(
-                [Envoye::class, Relance1::class, Relance2::class, Negociation::class],
-                Accepte::class
-            )
-            ->allowTransition(
-                [Envoye::class, Relance1::class, Relance2::class, Negociation::class],
-                Refuse::class
-            )
-            ->allowTransition(
-                [Envoye::class, Relance1::class, Relance2::class, Negociation::class],
-                Expire::class
-            );
+            // Négociation : manuelle, depuis n'importe quel statut envoyé
+            ->allowTransition([Envoye::class, Delivre::class, Consulte::class, Relance1::class, Relance2::class], Negociation::class);
+
+        // Issues possibles depuis tout statut « en attente de réponse client »
+        foreach ([Accepte::class, Refuse::class, Expire::class, Annule::class] as $issue) {
+            $config->allowTransition($apresEnvoi, $issue);
+        }
+
+        return $config;
     }
 }

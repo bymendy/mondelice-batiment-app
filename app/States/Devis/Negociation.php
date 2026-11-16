@@ -3,14 +3,23 @@
 namespace App\States\Devis;
 
 /**
- * Client en discussion active sur le contenu ou le prix du devis.
- * Famille de badge UI : En cours / action requise (bleu).
+ * Le client discute le devis. Passage manuel.
+ * Macro-état : Envoyé. Famille de badge UI : En cours (bleu).
  *
- * Transitions sortantes autorisées : -> Accepte, -> Refuse, -> Expire
- * (voir DevisState::config()).
+ * Passages autorisés : voir DevisState::config().
  */
 class Negociation extends DevisState
 {
+    /**
+     * Nom enregistré dans la colonne `statut` de la table `devis`.
+     *
+     * @var string|null
+     */
+    public static ?string $name = 'negociation';
+
+    /**
+     * @return string
+     */
     public function label(): string
     {
         return 'Négociation';

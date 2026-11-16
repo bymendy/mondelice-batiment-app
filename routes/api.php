@@ -178,3 +178,12 @@ Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
     Route::put('lignes-devis/{ligne}', [\App\Http\Controllers\LigneDevisController::class, 'update'])->whereNumber('ligne');
     Route::delete('lignes-devis/{ligne}', [\App\Http\Controllers\LigneDevisController::class, 'destroy'])->whereNumber('ligne');
 });
+
+/**
+ * Envoi et statut du devis (module Devis, lot D2).
+ * Permissions appliquees par le controleur.
+ */
+Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
+    Route::post('devis/{devis}/envoyer', [\App\Http\Controllers\DevisStatutController::class, 'envoyer'])->whereNumber('devis');
+    Route::post('devis/{devis}/statut', [\App\Http\Controllers\DevisStatutController::class, 'changer'])->whereNumber('devis');
+});

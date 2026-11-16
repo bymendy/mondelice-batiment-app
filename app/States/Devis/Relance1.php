@@ -3,14 +3,23 @@
 namespace App\States\Devis;
 
 /**
- * Première relance envoyée, client toujours sans réponse.
- * Famille de badge UI : Alerte / attention (orange).
+ * Première relance (J+3), atteinte automatiquement.
+ * Macro-état : Envoyé. Famille de badge UI : À traiter (orange).
  *
- * Transitions sortantes autorisées : -> Relance2, -> Accepte, -> Refuse,
- * -> Expire (voir DevisState::config()).
+ * Passages autorisés : voir DevisState::config().
  */
 class Relance1 extends DevisState
 {
+    /**
+     * Nom enregistré dans la colonne `statut` de la table `devis`.
+     *
+     * @var string|null
+     */
+    public static ?string $name = 'relance_1';
+
+    /**
+     * @return string
+     */
     public function label(): string
     {
         return 'Relance 1';

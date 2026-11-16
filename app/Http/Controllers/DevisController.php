@@ -180,6 +180,8 @@ class DevisController extends Controller implements HasMiddleware
 
         return array_merge($devis->toArray(), [
             'detail_totaux' => (new CalculTotauxDevis())->calculer($devis->lignes),
+            'statut_libelle' => \App\Services\Devis\StatutsDevis::libelle((string) $devis->statut),
+            'macro_etat' => \App\Services\Devis\StatutsDevis::macroEtat((string) $devis->statut),
         ]);
     }
 }

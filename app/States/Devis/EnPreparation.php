@@ -3,17 +3,23 @@
 namespace App\States\Devis;
 
 /**
- * Statut d'entrée du Devis, avant tout envoi au client.
- * Famille de badge UI : Neutre / en attente (gris).
+ * Statut d'entrée du devis : brouillon en cours de rédaction.
+ * Macro-état : Brouillon. Famille de badge UI : Neutre (gris).
  *
- * Transition sortante autorisée : -> Envoye (voir DevisState::config()).
- * Le passage vers Envoye doit être déclenché par une action humaine
- * explicite (endpoint d'envoi dédié, pas une mise à jour générique de
- * statut) — contrainte actée pour rester compatible avec la V3 assistant
- * vocal (Mondelice_Developpement_IA_Responsable.tex, décision 2).
+ * Passages autorisés : voir DevisState::config().
  */
 class EnPreparation extends DevisState
 {
+    /**
+     * Nom enregistré dans la colonne `statut` de la table `devis`.
+     *
+     * @var string|null
+     */
+    public static ?string $name = 'en_preparation';
+
+    /**
+     * @return string
+     */
     public function label(): string
     {
         return 'En préparation';
