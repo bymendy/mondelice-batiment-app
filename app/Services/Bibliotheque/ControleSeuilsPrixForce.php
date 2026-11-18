@@ -59,7 +59,9 @@ final class ControleSeuilsPrixForce
      */
     public function estActif(): bool
     {
-        return $this->seuils !== [];
+        // Les seuils du devis (marge globale, remise maximum) ne concernent pas le prix forcé.
+        return isset($this->seuils[TypeSeuil::MargeMainOeuvre->value])
+            || isset($this->seuils[TypeSeuil::MargeFournitures->value]);
     }
 
     /**

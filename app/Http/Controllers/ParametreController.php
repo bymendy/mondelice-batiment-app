@@ -62,6 +62,10 @@ class ParametreController extends Controller implements HasMiddleware
     {
         abort_unless(array_key_exists($cle, Parametre::DEFINITIONS), 404);
 
+        // Certains réglages sont réservés à la Direction (clé « permission » de la définition).
+        $permission = Parametre::DEFINITIONS[$cle]['permission'] ?? null;
+        abort_if($permission !== null && ! $request->user()->can($permission), 403);
+
         // `present` plutot que `required` : un reglage facultatif peut etre remis a null.
         $regle = (string) Parametre::DEFINITIONS[$cle]['regle'];
         $regles = array_merge([str_contains($regle, 'nullable') ? 'present' : 'required'], explode('|', $regle));

@@ -6,6 +6,7 @@ use App\Http\Requests\LigneDevisDepuisArticleRequest;
 use App\Models\ArticlePrix;
 use App\Models\Devis;
 use App\Services\Devis\AccesDevis;
+use App\Services\Devis\ControleSeuilsDevis;
 use App\Services\Devis\CopieArticleDansDevis;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -53,15 +54,18 @@ class LigneDevisArticleController extends Controller implements HasMiddleware
             ]);
         }
 
-        $ligne = $copie->copier(
-            $fiche,
-            $article,
-            (float) $request->input('quantite'),
-            $request->filled('lot_id') ? $request->integer('lot_id') : null,
-            $request->filled('emplacement_id') ? $request->integer('emplacement_id') : null
-        );
+        $ligne = app(ControleSeuilsDevis::class)->executer($fiche, $utilisateur, function () use ($copie, $fiche, $article, $request) {
+            $ligne = $copie->copier(
+                $fiche,
+                $article,
+                (float) $request->input('quantite'),
+                $request->filled('lot_id') ? $request->integer('lot_id') : null,
+                $request->filled('emplacement_id') ? $request->integer('emplacement_id') : null
+            );
+            $fiche->recalculerTotaux();
 
-        $fiche->recalculerTotaux();
+            return $ligne;
+        });
 
         activity()
             ->performedOn($fiche)

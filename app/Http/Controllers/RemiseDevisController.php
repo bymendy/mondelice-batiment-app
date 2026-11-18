@@ -6,6 +6,7 @@ use App\Http\Requests\RemiseDevisRequest;
 use App\Models\DeductionDevis;
 use App\Models\Devis;
 use App\Services\Devis\AccesDevis;
+use App\Services\Devis\ControleSeuilsDevis;
 use App\Services\Devis\PresentationDevis;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -42,7 +43,7 @@ class RemiseDevisController extends Controller implements HasMiddleware
         $donnees = $request->validated();
         $donnees['ordre'] ??= ((int) DeductionDevis::query()->where('devis_id', $fiche->getKey())->max('ordre')) + 1;
 
-        [$remise, $detail] = DB::transaction(function () use ($fiche, $donnees): array {
+        [$remise, $detail] = app(ControleSeuilsDevis::class)->executer($fiche, $request->user(), function () use ($fiche, $donnees): array {
             $remise = DeductionDevis::create(array_merge($donnees, ['devis_id' => $fiche->getKey()]));
 
             return [$remise, $this->recalculer($fiche, $remise)];
@@ -65,7 +66,7 @@ class RemiseDevisController extends Controller implements HasMiddleware
         $element = DeductionDevis::query()->findOrFail($remise);
         $fiche = $this->devisModifiable($request, $element->devis_id);
 
-        $detail = DB::transaction(function () use ($element, $fiche, $request): array {
+        $detail = app(ControleSeuilsDevis::class)->executer($fiche, $request->user(), function () use ($element, $fiche, $request): array {
             $element->fill($request->validated())->save();
 
             return $this->recalculer($fiche, $element);

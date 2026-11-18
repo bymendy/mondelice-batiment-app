@@ -116,7 +116,11 @@ class SeuilsPrixForceLot6Test extends TestCase
     public function la_direction_fixe_les_seuils_et_les_autres_roles_n_y_ont_pas_acces(): void
     {
         $liste = $this->agirEn($this->direction)->getJson('/api/parametres/seuils')->assertOk();
-        $this->assertSame(['marge_mo_min', 'marge_fournitures_min'], collect($liste->json('data'))->pluck('type')->all());
+        // Depuis le lot D4b : deux seuils de plus, ceux du devis.
+        $this->assertSame(
+            ['marge_mo_min', 'marge_fournitures_min', 'marge_globale_min', 'remise_max'],
+            collect($liste->json('data'))->pluck('type')->all()
+        );
         $this->assertNull($liste->json('data.0.valeur'));
         $this->assertFalse($liste->json('data.0.actif'));
 

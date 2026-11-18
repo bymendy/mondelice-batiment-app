@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ChangerStatutDevisRequest;
 use App\Models\Devis;
 use App\Services\Devis\AccesDevis;
+use App\Services\Devis\ControleSeuilsDevis;
 use App\Services\Devis\ChangementStatutDevis;
 use App\Services\Devis\StatutsDevis;
 use Illuminate\Http\JsonResponse;
@@ -53,6 +54,8 @@ class DevisStatutController extends Controller implements HasMiddleware
                 'lignes' => 'Ajoutez au moins une ligne avant d\'envoyer le devis.',
             ]);
         }
+
+        app(ControleSeuilsDevis::class)->verifierAvantEnvoi($fiche, $request->user());
 
         $changement->appliquer($fiche, 'envoye', $request->user());
 

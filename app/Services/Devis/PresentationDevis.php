@@ -82,8 +82,15 @@ final class PresentationDevis
      */
     public static function totaux(array $detail, ?User $utilisateur): array
     {
+        $indicateur = isset($detail['marge']) && $utilisateur !== null && $utilisateur->can('devis.voir_indicateur_marge')
+            ? app(ControleSeuilsDevis::class)->indicateur($detail['marge'])
+            : null;
+
         if (! self::voitMarge($utilisateur)) {
             unset($detail['marge']);
+        }
+        if ($indicateur !== null) {
+            $detail['indicateur_marge'] = $indicateur;
         }
 
         return $detail;
