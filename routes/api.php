@@ -195,3 +195,13 @@ Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
 Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
     Route::post('devis/{devis}/lignes/depuis-article', [\App\Http\Controllers\LigneDevisArticleController::class, 'store'])->whereNumber('devis');
 });
+
+/**
+ * Remises par lot et globales du devis (module Devis, lot D4a).
+ * Permissions appliquees par le controleur.
+ */
+Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
+    Route::post('devis/{devis}/remises', [\App\Http\Controllers\RemiseDevisController::class, 'store'])->whereNumber('devis');
+    Route::put('remises-devis/{remise}', [\App\Http\Controllers\RemiseDevisController::class, 'update'])->whereNumber('remise');
+    Route::delete('remises-devis/{remise}', [\App\Http\Controllers\RemiseDevisController::class, 'destroy'])->whereNumber('remise');
+});

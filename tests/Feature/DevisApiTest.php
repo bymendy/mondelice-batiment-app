@@ -360,7 +360,11 @@ class DevisApiTest extends TestCase
 
     public function test_le_prix_de_revient_ne_se_saisit_ni_ne_se_lit(): void
     {
-        $commercial = $this->creerUtilisateur($this->entreprise, 'Commercial');
+        // Depuis le lot D4a : vrai seulement sans la permission devis.voir_marge.
+        $roleSansMarge = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'Sans marge', 'guard_name' => 'web']);
+        $roleSansMarge->syncPermissions(['devis.voir', 'devis.modifier', 'bibliotheque.consulter']);
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+        $commercial = $this->creerUtilisateur($this->entreprise, 'Sans marge');
         $devis = $this->devisPour($this->nouveauClient(), $commercial);
 
         $cree = $this->agirEn($commercial)->postJson("/api/devis/{$devis->id}/lignes", $this->ligne(['prix_revient_unitaire' => 40, 'article_prix_id' => 1]))

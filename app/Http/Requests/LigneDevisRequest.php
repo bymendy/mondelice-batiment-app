@@ -40,6 +40,11 @@ class LigneDevisRequest extends FormRequest
             'unite' => ['sometimes', 'nullable', 'string', 'max:20'],
             'prix_unitaire_ht' => array_merge($present, ['numeric', 'between:0,99999999.99']),
             'taux_tva' => ['sometimes', 'numeric', 'between:0,100'],
+            'remise_pct' => ['sometimes', 'numeric', 'between:0,100'],
+            // Le revient ne se saisit qu'avec devis.voir_marge ; sinon il est ignore.
+            'prix_revient_unitaire' => $this->user()?->can('devis.voir_marge')
+                ? ['sometimes', 'nullable', 'numeric', 'between:0,99999999.99']
+                : ['exclude'],
             'ordre' => ['sometimes', 'integer', 'between:0,100000'],
             'lot_id' => ['sometimes', 'nullable', 'integer', $this->regleLot('lot')],
             'emplacement_id' => ['sometimes', 'nullable', 'integer', $this->regleLot('emplacement')],

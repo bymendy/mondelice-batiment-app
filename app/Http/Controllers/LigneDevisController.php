@@ -105,7 +105,10 @@ class LigneDevisController extends Controller implements HasMiddleware
      */
     private function reponse(LigneDevis $ligne, Devis $devis): array
     {
-        return array_merge($ligne->refresh()->toArray(), ['totaux_devis' => $this->totaux($devis)]);
+        return array_merge(
+            \App\Services\Devis\PresentationDevis::ligne($ligne->refresh(), request()->user()),
+            ['totaux_devis' => $this->totaux($devis)]
+        );
     }
 
     /**

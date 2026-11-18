@@ -71,7 +71,10 @@ class LigneDevisArticleController extends Controller implements HasMiddleware
             ->log(sprintf('Ligne « %s » ajoutée depuis la bibliothèque (%s).', $ligne->libelle, $article->reference));
 
         return response()->json(
-            array_merge($ligne->refresh()->load('composants')->toArray(), ['totaux_devis' => $this->totaux($fiche)]),
+            array_merge(
+                \App\Services\Devis\PresentationDevis::ligne($ligne->refresh()->load('composants'), $utilisateur),
+                ['totaux_devis' => $this->totaux($fiche)]
+            ),
             201
         );
     }

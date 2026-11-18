@@ -161,13 +161,23 @@ class Devis extends Model
     }
 
     /**
+     * Remises du devis : par lot (lot_id renseigne) ou globales (lot_id vide).
+     *
+     * @return HasMany<DeductionDevis>
+     */
+    public function deductions(): HasMany
+    {
+        return $this->hasMany(DeductionDevis::class)->orderBy('ordre')->orderBy('id');
+    }
+
+    /**
      * Recalcule les totaux depuis les lignes et les enregistre.
      *
      * @return array<string, mixed> Le detail du calcul (voir CalculTotauxDevis).
      */
     public function recalculerTotaux(): array
     {
-        $resultat = (new CalculTotauxDevis())->calculer($this->lignes()->get());
+        $resultat = (new CalculTotauxDevis())->calculer($this->lignes()->get(), $this->deductions()->get());
 
         $this->forceFill([
             'total_ht' => $resultat['total_ht'],

@@ -143,6 +143,11 @@ class LigneDevisArticleTest extends TestCase
 
     public function test_le_prix_de_revient_et_les_prix_d_achat_ne_sont_pas_renvoyes(): void
     {
+        // Depuis le lot D4a : vrai seulement sans la permission devis.voir_marge.
+        $roleSansMarge = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'Sans marge', 'guard_name' => 'web']);
+        $roleSansMarge->syncPermissions(['devis.voir', 'devis.modifier', 'bibliotheque.consulter']);
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+        $this->commercial = $this->creerUtilisateur($this->entreprise, 'Sans marge');
         $devis = $this->nouveauDevis();
         $article = $this->articleAvecSousDetail();
 

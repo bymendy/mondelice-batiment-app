@@ -49,6 +49,7 @@ class LigneDevis extends Model
         'unite',
         'prix_unitaire_ht',
         'prix_revient_unitaire',
+        'remise_pct',
         'taux_tva',
         'ordre',
     ];
@@ -66,6 +67,7 @@ class LigneDevis extends Model
         'prix_unitaire_ht' => 'decimal:2',
         'prix_revient_unitaire' => 'decimal:2',
         'taux_tva' => 'decimal:2',
+        'remise_pct' => 'decimal:2',
         'ordre' => 'integer',
     ];
 
