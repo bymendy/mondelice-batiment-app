@@ -8,12 +8,14 @@ use App\Models\Devis;
 use App\Services\Devis\AccesDevis;
 use App\Services\Devis\CalculTotauxDevis;
 use App\Services\Devis\NumerotationDevis;
+use App\Services\Devis\SynchronisationAffaireDevis;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Devis : brouillon, lots, lignes et totaux. Les statuts, la copie figee
@@ -84,7 +86,7 @@ class DevisController extends Controller implements HasMiddleware
      * @param NumerotationDevis $numerotation
      * @return JsonResponse
      */
-    public function store(StoreDevisRequest $request, NumerotationDevis $numerotation): JsonResponse
+    public function store(StoreDevisRequest $request, NumerotationDevis $numerotation, SynchronisationAffaireDevis $synchronisation): JsonResponse
     {
         $donnees = array_merge([
             'date_devis' => now()->toDateString(),
@@ -92,11 +94,13 @@ class DevisController extends Controller implements HasMiddleware
         ], $request->validated());
         $donnees['auteur_id'] = $request->user()->getKey();
 
-        $devis = DB::transaction(function () use ($donnees, $numerotation): Devis {
+        $auteur = $request->user();
+        $devis = DB::transaction(function () use ($donnees, $numerotation, $synchronisation, $auteur): Devis {
             $devis = new Devis($donnees);
             $devis->date_expiration = $devis->date_devis->copy()->addDays($devis->validite_jours);
             $devis->save();
             $numerotation->attribuer($devis);
+            $synchronisation->aLaCreation($devis, $auteur);
 
             return $devis;
         });
@@ -133,14 +137,24 @@ class DevisController extends Controller implements HasMiddleware
      * @param int $devis
      * @return JsonResponse
      */
-    public function update(UpdateDevisRequest $request, int $devis): JsonResponse
+    public function update(UpdateDevisRequest $request, int $devis, SynchronisationAffaireDevis $synchronisation): JsonResponse
     {
         $fiche = AccesDevis::visibles($request->user())->findOrFail($devis);
         AccesDevis::exigerModifiable($fiche);
 
-        $fiche->fill($request->validated());
+        $donnees = $request->validated();
+        if (array_key_exists('opportunite_id', $donnees) && $donnees['opportunite_id'] === null && $fiche->opportunite_id !== null) {
+            throw ValidationException::withMessages([
+                'opportunite_id' => 'Un devis reste rattaché à une affaire : choisissez une autre affaire plutôt que de la retirer.',
+            ]);
+        }
+        $fiche->fill($donnees);
         $fiche->date_expiration = $fiche->date_devis?->copy()->addDays($fiche->validite_jours);
         $fiche->save();
+
+        if ($fiche->wasChanged('opportunite_id')) {
+            $synchronisation->aLaCreation($fiche, $request->user());
+        }
 
         return response()->json($this->fiche($fiche->refresh()));
     }

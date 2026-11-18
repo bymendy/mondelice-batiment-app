@@ -10,8 +10,13 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Fait suivre l'étape de l'affaire au statut du devis (décision du 13 novembre
- * 2026) :
+ * Fait suivre l'étape de l'affaire à la vie du devis.
+ *
+ * À la création du devis (décision du 18 novembre 2026) :
+ *  - devis sans affaire -> une affaire est créée à « Devis en cours » ;
+ *  - devis sur une affaire -> l'affaire passe à « Devis en cours ».
+ *
+ * Au changement de statut (décision du 13 novembre 2026) :
  *  - devis envoyé    -> « Devis envoyé » ;
  *  - négociation     -> « Négociation » ;
  *  - devis accepté   -> « Gagné ».
@@ -37,6 +42,44 @@ class SynchronisationAffaireDevis
     ];
 
     /**
+     * Délai, en jours, de la prochaine action posée automatiquement.
+     */
+    private const DELAI_PROCHAINE_ACTION = 3;
+
+    /**
+     * Rattache le devis qui vient d'être créé (ou rattaché) à son affaire.
+     * Un avenant ne crée pas d'affaire et n'en déplace pas.
+     *
+     * @param Devis $devis
+     * @param User|null $auteur
+     * @return void
+     */
+    public function aLaCreation(Devis $devis, ?User $auteur): void
+    {
+        if ($devis->devis_parent_id !== null) {
+            return;
+        }
+
+        $vers = EtapePipeline::query()->where('code', 'devis_en_cours')->first();
+        if ($vers === null) {
+            return;
+        }
+
+        if ($devis->opportunite_id === null) {
+            $this->creerAffaire($devis, $vers, $auteur);
+
+            return;
+        }
+
+        $affaire = Opportunite::query()->with('etape')->find($devis->opportunite_id);
+        if ($affaire === null) {
+            return;
+        }
+
+        $this->deplacer($affaire, $vers, $devis, $auteur, 'Finaliser le devis ' . $devis->numero);
+    }
+
+    /**
      * @param Devis $devis
      * @param string $statut Le nouveau statut du devis.
      * @param User|null $auteur
@@ -55,8 +98,69 @@ class SynchronisationAffaireDevis
             return;
         }
 
+        $this->deplacer($affaire, $vers, $devis, $auteur, 'Suivre le devis ' . $devis->numero);
+    }
+
+    /**
+     * Crée l'affaire d'un devis saisi sans affaire, directement à « Devis en cours ».
+     *
+     * @param Devis $devis
+     * @param EtapePipeline $etape
+     * @param User|null $auteur
+     * @return void
+     */
+    private function creerAffaire(Devis $devis, EtapePipeline $etape, ?User $auteur): void
+    {
+        DB::transaction(function () use ($devis, $etape, $auteur): void {
+            $titre = trim((string) $devis->titre);
+
+            $affaire = Opportunite::create([
+                'client_id' => $devis->client_id,
+                'adresse_chantier_id' => $devis->adresse_chantier_id,
+                'titre' => $titre !== '' ? $titre : 'Devis ' . $devis->numero,
+                'etape_id' => $etape->getKey(),
+                'probabilite' => $etape->probabiliteFixe() ?? $etape->probabilite_defaut,
+                'commercial_id' => $auteur?->getKey() ?? $devis->auteur_id,
+                'prochaine_action' => 'Finaliser et envoyer le devis ' . $devis->numero,
+                'prochaine_action_le' => now()->addDays(self::DELAI_PROCHAINE_ACTION)->toDateString(),
+            ]);
+
+            $devis->forceFill(['opportunite_id' => $affaire->getKey()])->save();
+
+            OpportuniteEtape::create([
+                'opportunite_id' => $affaire->getKey(),
+                'etape_depuis_id' => null,
+                'etape_vers_id' => $etape->getKey(),
+                'change_le' => now(),
+                'auteur_id' => $auteur?->getKey(),
+                'triggered_by' => 'human',
+                'devis_id' => $devis->getKey(),
+                'retour_arriere' => false,
+            ]);
+
+            activity()
+                ->performedOn($affaire)
+                ->causedBy($auteur)
+                ->event('created')
+                ->withProperties(['vers' => $etape->code, 'devis' => $devis->numero, 'creee_par_devis' => true])
+                ->log(sprintf('Affaire « %s » créée par le devis %s.', $affaire->titre, $devis->numero));
+        });
+    }
+
+    /**
+     * Déplace l'affaire vers l'étape visée, si les règles le permettent.
+     *
+     * @param Opportunite $affaire Avec son étape chargée.
+     * @param EtapePipeline $vers
+     * @param Devis $devis
+     * @param User|null $auteur
+     * @param string $actionReouverture Prochaine action posée si l'affaire était clôturée.
+     * @return void
+     */
+    private function deplacer(Opportunite $affaire, EtapePipeline $vers, Devis $devis, ?User $auteur, string $actionReouverture): void
+    {
         $depuis = $affaire->etape;
-        if ($depuis->getKey() === $vers->getKey() || $depuis->code === 'gagne') {
+        if ($depuis === null || $depuis->getKey() === $vers->getKey() || $depuis->code === 'gagne') {
             return;
         }
 
@@ -69,7 +173,7 @@ class SynchronisationAffaireDevis
         $retourArriere = $vers->ordre < $depuis->ordre
             || (! $ouverteAvant && $vers->type === EtapePipeline::TYPE_OUVERTE);
 
-        DB::transaction(function () use ($affaire, $depuis, $vers, $devis, $auteur, $gagne, $ouverteAvant, $retourArriere): void {
+        DB::transaction(function () use ($affaire, $depuis, $vers, $devis, $auteur, $gagne, $ouverteAvant, $retourArriere, $actionReouverture): void {
             $affaire->etape_id = $vers->getKey();
             $affaire->probabilite = $vers->probabiliteFixe() ?? $vers->probabilite_defaut;
             $affaire->motif_perte_id = null;
@@ -80,8 +184,8 @@ class SynchronisationAffaireDevis
                 $affaire->prochaine_action = null;
                 $affaire->prochaine_action_le = null;
             } elseif (! $ouverteAvant) {
-                $affaire->prochaine_action = 'Suivre le devis ' . $devis->numero;
-                $affaire->prochaine_action_le = now()->addDays(3)->toDateString();
+                $affaire->prochaine_action = $actionReouverture;
+                $affaire->prochaine_action_le = now()->addDays(self::DELAI_PROCHAINE_ACTION)->toDateString();
             }
             $affaire->save();
 
@@ -92,6 +196,7 @@ class SynchronisationAffaireDevis
                 'change_le' => now(),
                 'auteur_id' => $auteur?->getKey(),
                 'triggered_by' => 'human',
+                'devis_id' => $devis->getKey(),
                 'retour_arriere' => $retourArriere,
             ]);
 
