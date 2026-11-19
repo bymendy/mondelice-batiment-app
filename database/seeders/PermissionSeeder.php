@@ -51,6 +51,7 @@ class PermissionSeeder extends Seeder
             'logs' => ['voir'],
             'parametres' => ['gerer', 'seuils'],
             'pipeline' => ['parametrer'],
+            'alertes' => ['seuils.recevoir'],
         ];
 
         foreach ($modules as $module => $actions) {
@@ -87,6 +88,7 @@ class PermissionSeeder extends Seeder
                 'logs' => ['voir'],
                 'parametres' => ['gerer', 'seuils'],
                 'pipeline' => ['parametrer'],
+                'alertes' => ['seuils.recevoir'],
             ],
             'Commercial' => [
                 'clients' => ['voir', 'creer', 'modifier', 'supprimer'],
@@ -117,6 +119,7 @@ class PermissionSeeder extends Seeder
             'Administratif' => [
                 'bibliotheque' => ['consulter', 'voir_prix_achat'],
                 'parametres' => ['gerer'],
+                'alertes' => ['seuils.recevoir'],
                 'clients' => ['voir', 'creer', 'modifier'],
                 'contacts' => ['voir', 'creer', 'modifier'],
                 'devis' => ['voir', 'voir_marge'],

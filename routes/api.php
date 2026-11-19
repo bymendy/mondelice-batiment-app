@@ -205,3 +205,10 @@ Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
     Route::put('remises-devis/{remise}', [\App\Http\Controllers\RemiseDevisController::class, 'update'])->whereNumber('remise');
     Route::delete('remises-devis/{remise}', [\App\Http\Controllers\RemiseDevisController::class, 'destroy'])->whereNumber('remise');
 });
+
+// Lot D4b (2e partie) : alertes de seuil et alertes à l'écran.
+Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
+    Route::get('alertes-seuils', [\App\Http\Controllers\AlerteSeuilController::class, 'index']);
+    Route::get('notifications', [\App\Http\Controllers\NotificationController::class, 'index']);
+    Route::post('notifications/{notification}/lue', [\App\Http\Controllers\NotificationController::class, 'lue'])->whereUuid('notification');
+});

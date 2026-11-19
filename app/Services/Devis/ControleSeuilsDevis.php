@@ -307,6 +307,11 @@ final class ControleSeuilsDevis
                 $borne,
                 self::pourcent($refus['seuil'])
             ));
+
+        // Un refus alerte la Direction et l'Administratif (alertes regroupées, lot D4b).
+        if ($evenement === 'refus_seuil') {
+            app(AlertesSeuils::class)->signaler($devis, $auteur, $refus, $moment);
+        }
     }
 
     /**

@@ -50,6 +50,12 @@ class Parametre extends Model
             'regle' => 'numeric|min:0|max:50',
             'permission' => 'parametres.seuils',
         ],
+        'alertes_seuil_delai_heures' => [
+            'libelle' => 'Alertes de seuil : durée (en heures) pendant laquelle les refus d\'une même personne sur un même devis sont regroupés dans une seule alerte',
+            'defaut' => 24,
+            'regle' => 'integer|min:1|max:720',
+            'permission' => 'parametres.seuils',
+        ],
     ];
 
     /**
