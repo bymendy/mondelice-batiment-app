@@ -44,6 +44,11 @@ class Parametre extends Model
             'defaut' => null,
             'regle' => 'nullable|numeric|min:0|max:99.99',
         ],
+        'tva_defaut' => [
+            'libelle' => 'Taux de TVA par défaut des nouveaux devis (en %)',
+            'defaut' => 20,
+            'regle' => 'numeric|min:0|max:100',
+        ],
         'marge_zone_orange_points' => [
             'libelle' => 'Indicateur de marge du devis : largeur de la zone orange au-dessus du seuil (en points de marge)',
             'defaut' => 5,

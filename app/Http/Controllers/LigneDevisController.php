@@ -19,12 +19,6 @@ use Illuminate\Routing\Controllers\Middleware;
 class LigneDevisController extends Controller implements HasMiddleware
 {
     /**
-     * Taux de TVA applique quand la ligne n'en donne pas (provisoire : le taux
-     * par defaut de l'entreprise sera un reglage).
-     */
-    private const TVA_PAR_DEFAUT = 20;
-
-    /**
      * @return array<int, Middleware>
      */
     public static function middleware(): array
@@ -42,7 +36,7 @@ class LigneDevisController extends Controller implements HasMiddleware
         $fiche = $this->devisModifiable($request, $devis);
         $donnees = $request->validated();
 
-        $donnees['taux_tva'] ??= self::TVA_PAR_DEFAUT;
+        $donnees['taux_tva'] ??= app(\App\Services\Devis\ParametresDevis::class)->tvaParDefaut($fiche);
         $donnees['ordre'] ??= ((int) LigneDevis::query()->where('devis_id', $fiche->getKey())->max('ordre')) + 1;
 
         $ligne = app(ControleSeuilsDevis::class)->executer($fiche, $request->user(), function () use ($donnees, $fiche): LigneDevis {
@@ -72,7 +66,11 @@ class LigneDevisController extends Controller implements HasMiddleware
         $donnees = $request->validated();
         $ancienRevient = $element->prix_revient_unitaire;
         app(ControleSeuilsDevis::class)->executer($fiche, $request->user(), function () use ($element, $donnees, $fiche): void {
-            $element->fill($donnees)->save();
+            $element->fill($donnees);
+            if ($element->article_prix_id !== null && $element->isDirty('prix_unitaire_ht')) {
+                $element->prix_force = true;
+            }
+            $element->save();
             $fiche->recalculerTotaux();
         });
         if (array_key_exists('prix_revient_unitaire', $donnees)

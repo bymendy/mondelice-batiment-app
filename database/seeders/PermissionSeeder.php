@@ -38,7 +38,7 @@ class PermissionSeeder extends Seeder
             'clients' => ['voir', 'creer', 'modifier', 'supprimer'],
             'contacts' => ['voir', 'creer', 'modifier', 'supprimer'],
             'opportunites' => ['voir', 'creer', 'modifier', 'supprimer', 'voir_toutes'],
-            'devis' => ['voir', 'creer', 'modifier', 'supprimer', 'envoyer', 'changer_statut_manuel', 'voir_marge', 'voir_indicateur_marge', 'demander_derogation', 'valider_derogation', 'creer_avenant', 'voir_prives_autres'],
+            'devis' => ['voir', 'creer', 'modifier', 'supprimer_brouillon', 'supprimer_brouillon_autres', 'envoyer', 'changer_statut_manuel', 'voir_marge', 'voir_indicateur_marge', 'demander_derogation', 'valider_derogation', 'creer_avenant', 'voir_prives_autres', 'modifier_parametres'],
             'bibliotheque' => ['consulter', 'personnaliser', 'supprimer', 'voir_prix_achat', 'publier_entreprise'],
             'chantiers' => ['voir', 'creer', 'modifier', 'supprimer'],
             'situations_travaux' => ['voir', 'creer', 'modifier', 'supprimer'],
@@ -70,12 +70,15 @@ class PermissionSeeder extends Seeder
             'bibliotheque_prix.modifier', 'bibliotheque_prix.supprimer',
         ])->where('guard_name', 'web')->delete();
 
+        // Permission renommee le 20 novembre 2026 (devis.supprimer -> devis.supprimer_brouillon).
+        Permission::where('name', 'devis.supprimer')->where('guard_name', 'web')->delete();
+
         $grants = [
             'Direction' => [
                 'clients' => ['voir', 'creer', 'modifier', 'supprimer'],
                 'contacts' => ['voir', 'creer', 'modifier', 'supprimer'],
                 'opportunites' => ['voir', 'creer', 'modifier', 'supprimer', 'voir_toutes'],
-                'devis' => ['voir', 'creer', 'modifier', 'supprimer', 'envoyer', 'changer_statut_manuel', 'voir_marge', 'voir_indicateur_marge', 'valider_derogation', 'creer_avenant', 'voir_prives_autres'],
+                'devis' => ['voir', 'creer', 'modifier', 'supprimer_brouillon', 'supprimer_brouillon_autres', 'envoyer', 'changer_statut_manuel', 'voir_marge', 'voir_indicateur_marge', 'valider_derogation', 'creer_avenant', 'voir_prives_autres', 'modifier_parametres'],
                 'bibliotheque' => ['consulter', 'personnaliser', 'supprimer', 'voir_prix_achat', 'publier_entreprise'],
                 'chantiers' => ['voir', 'creer', 'modifier', 'supprimer'],
                 'situations_travaux' => ['voir', 'creer', 'modifier', 'supprimer'],
@@ -94,7 +97,7 @@ class PermissionSeeder extends Seeder
                 'clients' => ['voir', 'creer', 'modifier', 'supprimer'],
                 'contacts' => ['voir', 'creer', 'modifier', 'supprimer'],
                 'opportunites' => ['voir', 'creer', 'modifier', 'supprimer'],
-                'devis' => ['voir', 'creer', 'modifier', 'supprimer', 'envoyer', 'changer_statut_manuel', 'voir_marge', 'voir_indicateur_marge', 'demander_derogation', 'creer_avenant'],
+                'devis' => ['voir', 'creer', 'modifier', 'supprimer_brouillon', 'envoyer', 'changer_statut_manuel', 'voir_marge', 'voir_indicateur_marge', 'demander_derogation', 'creer_avenant', 'modifier_parametres'],
                 'bibliotheque' => ['consulter', 'personnaliser', 'voir_prix_achat'], // personnaliser : soumis au reglage commercial_peut_modifier_bibliotheque (desactive par defaut), voir BibliothequePrixModifiable
                 'chantiers' => ['voir'],
                 'planning' => ['voir'],

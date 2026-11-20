@@ -33,7 +33,7 @@ class DevisController extends Controller implements HasMiddleware
             new Middleware('can:devis.voir', only: ['index', 'show']),
             new Middleware('can:devis.creer', only: ['store']),
             new Middleware('can:devis.modifier', only: ['update']),
-            new Middleware('can:devis.supprimer', only: ['destroy']),
+            new Middleware('can:devis.supprimer_brouillon', only: ['destroy']),
         ];
     }
 
@@ -101,6 +101,7 @@ class DevisController extends Controller implements HasMiddleware
             $devis->save();
             $numerotation->attribuer($devis);
             $synchronisation->aLaCreation($devis, $auteur);
+            app(\App\Services\Devis\ParametresDevis::class)->creer($devis);
 
             return $devis;
         });
@@ -170,6 +171,14 @@ class DevisController extends Controller implements HasMiddleware
     {
         $fiche = AccesDevis::visibles($request->user())->findOrFail($devis);
         AccesDevis::exigerModifiable($fiche);
+
+        // Un brouillon se supprime par son auteur ; celui d'un autre, par la Direction seulement.
+        abort_unless(
+            (int) $fiche->auteur_id === (int) $request->user()->getKey()
+                || $request->user()->can('devis.supprimer_brouillon_autres'),
+            403,
+            'Seul son auteur ou la Direction peut supprimer ce brouillon.'
+        );
 
         $fiche->delete();
 

@@ -89,6 +89,7 @@ class AvenantDevisController extends Controller implements HasMiddleware
                 'numero' => $reference . '-A' . $rang,
             ]);
             $avenant->save();
+            app(\App\Services\Devis\ParametresDevis::class)->creer($avenant);
 
             return $avenant;
         });

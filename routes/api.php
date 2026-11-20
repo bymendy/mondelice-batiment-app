@@ -227,3 +227,9 @@ Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
 Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
     Route::post('devis/{devis}/avenants', [\App\Http\Controllers\AvenantDevisController::class, 'store'])->whereNumber('devis');
 });
+
+// Lot « paramètres du devis » (1re partie).
+Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
+    Route::get('devis/{devis}/parametres', [\App\Http\Controllers\ParametresDevisController::class, 'show'])->whereNumber('devis');
+    Route::put('devis/{devis}/parametres', [\App\Http\Controllers\ParametresDevisController::class, 'update'])->whereNumber('devis');
+});

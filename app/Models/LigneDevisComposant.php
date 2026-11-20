@@ -44,6 +44,8 @@ class LigneDevisComposant extends Model
         'type',
         'designation',
         'quantite',
+        'quantite_base',
+        'qualification',
         'unite',
         'prix_achat_ht',
         'prix_vente_ht',
@@ -63,6 +65,7 @@ class LigneDevisComposant extends Model
      */
     protected $casts = [
         'quantite' => 'decimal:4',
+        'quantite_base' => 'decimal:4',
         'prix_achat_ht' => 'decimal:4',
         'prix_vente_ht' => 'decimal:4',
         'taux_horaire_vente' => 'decimal:2',

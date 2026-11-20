@@ -35,7 +35,7 @@ class RolePermissionMatrixTest extends TestCase
         'Direction' => [
             'clients.voir', 'contacts.voir', 'clients.creer', 'contacts.creer', 'clients.modifier', 'contacts.modifier', 'clients.supprimer', 'contacts.supprimer',
             'opportunites.voir', 'opportunites.creer', 'opportunites.modifier', 'opportunites.supprimer', 'opportunites.voir_toutes',
-            'devis.voir', 'devis.creer', 'devis.modifier', 'devis.supprimer', 'devis.envoyer', 'devis.changer_statut_manuel', 'devis.voir_marge', 'devis.voir_indicateur_marge', 'devis.valider_derogation', 'devis.creer_avenant', 'devis.voir_prives_autres',
+            'devis.voir', 'devis.creer', 'devis.modifier', 'devis.supprimer_brouillon', 'devis.envoyer', 'devis.changer_statut_manuel', 'devis.voir_marge', 'devis.voir_indicateur_marge', 'devis.valider_derogation', 'devis.creer_avenant', 'devis.voir_prives_autres', 'devis.modifier_parametres', 'devis.supprimer_brouillon_autres',
             'bibliotheque.consulter', 'bibliotheque.personnaliser', 'bibliotheque.supprimer', 'bibliotheque.voir_prix_achat', 'bibliotheque.publier_entreprise',
             'chantiers.voir', 'chantiers.creer', 'chantiers.modifier', 'chantiers.supprimer',
             'situations_travaux.voir', 'situations_travaux.creer', 'situations_travaux.modifier', 'situations_travaux.supprimer',
@@ -52,7 +52,7 @@ class RolePermissionMatrixTest extends TestCase
         'Commercial' => [
             'clients.voir', 'contacts.voir', 'clients.creer', 'contacts.creer', 'clients.modifier', 'contacts.modifier', 'clients.supprimer', 'contacts.supprimer',
             'opportunites.voir', 'opportunites.creer', 'opportunites.modifier', 'opportunites.supprimer',
-            'devis.voir', 'devis.creer', 'devis.modifier', 'devis.supprimer', 'devis.envoyer', 'devis.changer_statut_manuel', 'devis.voir_marge', 'devis.voir_indicateur_marge', 'devis.demander_derogation', 'devis.creer_avenant',
+            'devis.voir', 'devis.creer', 'devis.modifier', 'devis.supprimer_brouillon', 'devis.envoyer', 'devis.changer_statut_manuel', 'devis.voir_marge', 'devis.voir_indicateur_marge', 'devis.demander_derogation', 'devis.creer_avenant', 'devis.modifier_parametres',
             'bibliotheque.consulter', 'bibliotheque.personnaliser', 'bibliotheque.voir_prix_achat',
             'chantiers.voir',
             'planning.voir',
@@ -164,7 +164,7 @@ class RolePermissionMatrixTest extends TestCase
             ->sort()
             ->values();
 
-        $this->assertEquals(70, $unionFromMatrix->count());
-        $this->assertEquals(70, \Spatie\Permission\Models\Permission::count());
+        $this->assertEquals(72, $unionFromMatrix->count());
+        $this->assertEquals(72, \Spatie\Permission\Models\Permission::count());
     }
 }
