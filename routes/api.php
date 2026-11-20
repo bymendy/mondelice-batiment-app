@@ -233,3 +233,9 @@ Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
     Route::get('devis/{devis}/parametres', [\App\Http\Controllers\ParametresDevisController::class, 'show'])->whereNumber('devis');
     Route::put('devis/{devis}/parametres', [\App\Http\Controllers\ParametresDevisController::class, 'update'])->whereNumber('devis');
 });
+
+// Lot « paramètres du devis » (2e partie) : recalcul et TVA.
+Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
+    Route::post('devis/{devis}/recalculer', [\App\Http\Controllers\RecalculDevisController::class, 'recalculer'])->whereNumber('devis');
+    Route::post('devis/{devis}/parametres/appliquer-tva', [\App\Http\Controllers\RecalculDevisController::class, 'appliquerTva'])->whereNumber('devis');
+});
