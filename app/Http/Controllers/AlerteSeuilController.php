@@ -30,6 +30,7 @@ class AlerteSeuilController extends Controller implements HasMiddleware
     {
         $alertes = AlerteSeuil::query()
             ->with(['devis:id,numero,titre', 'auteur:id,name'])
+            ->whereIn('devis_id', \App\Services\Devis\AccesDevis::visibles($request->user())->select('id'))
             ->when($request->filled('devis_id'), fn ($requete) => $requete->where('devis_id', $request->integer('devis_id')))
             ->orderByDesc('derniere_le')
             ->orderByDesc('id')

@@ -34,7 +34,8 @@ class AccesDevis
     {
         $requete = Devis::query();
 
-        if (! $utilisateur->can('opportunites.voir_toutes')) {
+        // Lot D6 : permission propre au devis (elle remplace opportunites.voir_toutes).
+        if (! $utilisateur->can('devis.voir_prives_autres')) {
             $requete->where(function (Builder $q) use ($utilisateur): void {
                 $q->where('portee', 'entreprise')->orWhere('auteur_id', $utilisateur->getKey());
             });
@@ -67,5 +68,21 @@ class AccesDevis
                 'devis' => 'Ce devis n\'est plus modifiable : il a été envoyé ou décidé.',
             ]);
         }
+    }
+
+    /**
+     * Cet utilisateur peut-il voir ce devis ? Même règle que `visibles()`,
+     * pour un devis déjà chargé : un devis privé n'est vu que de son auteur
+     * et de ceux qui ont `devis.voir_prives_autres` (la Direction).
+     *
+     * @param User $utilisateur
+     * @param Devis $devis
+     * @return bool
+     */
+    public static function peutVoir(User $utilisateur, Devis $devis): bool
+    {
+        return $devis->portee !== 'prive'
+            || $devis->auteur_id === $utilisateur->getKey()
+            || $utilisateur->can('devis.voir_prives_autres');
     }
 }

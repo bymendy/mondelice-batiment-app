@@ -78,7 +78,8 @@ final class AlertesSeuils
         $destinataires = User::permission('alertes.seuils.recevoir')
             ->where('tenant_id', $devis->tenant_id)
             ->when($auteur !== null, fn ($requete) => $requete->whereKeyNot($auteur->getKey()))
-            ->get();
+            ->get()
+            ->filter(fn (User $destinataire): bool => AccesDevis::peutVoir($destinataire, $devis));
 
         foreach ($destinataires as $destinataire) {
             // Un e-mail en échec ne doit ni bloquer les autres ni changer la réponse.
