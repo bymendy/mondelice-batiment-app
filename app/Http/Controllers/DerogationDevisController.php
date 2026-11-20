@@ -9,6 +9,7 @@ use App\Models\SeuilTarifaire;
 use App\Models\User;
 use App\Notifications\DerogationDevisNotification;
 use App\Services\Devis\AccesDevis;
+use App\Services\Devis\ChangementStatutDevis;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -133,6 +134,7 @@ class DerogationDevisController extends Controller implements HasMiddleware
         ]);
 
         $this->journaliser($request, $fiche, $derogation, 'derogation_demandee', 'Dérogation demandée');
+        $this->suivreStatut($request, $fiche);
 
         $valideurs = User::permission('devis.valider_derogation')
             ->where('tenant_id', $fiche->tenant_id)
@@ -204,7 +206,9 @@ class DerogationDevisController extends Controller implements HasMiddleware
         $this->exigerEnAttente($element);
 
         $element->update(['statut' => DerogationDevis::ANNULEE, 'decidee_le' => now()]);
-        $this->journaliser($request, $element->devis()->firstOrFail(), $element, 'derogation_annulee', 'Dérogation annulée par le demandeur');
+        $fiche = $element->devis()->firstOrFail();
+        $this->journaliser($request, $fiche, $element, 'derogation_annulee', 'Dérogation annulée par le demandeur');
+        $this->suivreStatut($request, $fiche);
 
         return response()->json($this->charger($element));
     }
@@ -236,6 +240,8 @@ class DerogationDevisController extends Controller implements HasMiddleware
             $acceptee ? 'derogation_acceptee' : 'derogation_refusee',
             $acceptee ? 'Dérogation acceptée' : 'Dérogation refusée'
         );
+
+        $this->suivreStatut($request, $fiche);
 
         $demandeur = $element->demandeur()->first();
         $this->notifier($demandeur === null ? [] : [$demandeur], $element, $fiche, $acceptee ? 'acceptee' : 'refusee');
@@ -348,5 +354,34 @@ class DerogationDevisController extends Controller implements HasMiddleware
     private function charger(DerogationDevis $derogation): DerogationDevis
     {
         return $derogation->fresh(['demandeur:id,name', 'decideur:id,name']);
+    }
+
+    /**
+     * Fait suivre le statut du devis à ses demandes (lot D4c bis) : « En attente
+     * de dérogation » tant qu'une demande attend une réponse, retour à « En
+     * préparation » ensuite. Le devis en attente reste modifiable, mais la
+     * machine à états refuse son envoi.
+     *
+     * @param Request $request
+     * @param Devis $devis
+     * @return void
+     */
+    private function suivreStatut(Request $request, Devis $devis): void
+    {
+        $enAttente = DerogationDevis::query()
+            ->where('devis_id', $devis->getKey())
+            ->where('statut', DerogationDevis::EN_ATTENTE)
+            ->exists();
+        $statut = (string) $devis->statut;
+        $changement = app(ChangementStatutDevis::class);
+
+        if ($enAttente && in_array($statut, ['en_preparation', 'pret_a_envoyer'], true)) {
+            if ($statut === 'pret_a_envoyer') {
+                $changement->appliquer($devis, 'en_preparation', $request->user());
+            }
+            $changement->appliquer($devis, 'en_attente_derogation', $request->user());
+        } elseif (! $enAttente && $statut === 'en_attente_derogation') {
+            $changement->appliquer($devis, 'en_preparation', $request->user());
+        }
     }
 }
