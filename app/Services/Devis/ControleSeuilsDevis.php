@@ -4,6 +4,7 @@ namespace App\Services\Devis;
 
 use App\Enums\TypeSeuil;
 use App\Exceptions\RefusSeuilDevisException;
+use App\Models\DerogationDevis;
 use App\Models\Devis;
 use App\Models\Parametre;
 use App\Models\SeuilTarifaire;
@@ -56,7 +57,7 @@ final class ControleSeuilsDevis
      */
     public function executer(Devis $devis, ?User $auteur, Closure $ecriture): mixed
     {
-        $seuils = $this->seuils();
+        $seuils = $this->seuils($devis);
         if ($seuils['marge'] === null && $seuils['remise'] === null) {
             return DB::transaction(fn () => $ecriture());
         }
@@ -100,7 +101,7 @@ final class ControleSeuilsDevis
      */
     public function verifierAvantEnvoi(Devis $devis, ?User $auteur): void
     {
-        $seuils = $this->seuils();
+        $seuils = $this->seuils($devis);
         if ($seuils['marge'] === null && $seuils['remise'] === null) {
             return;
         }
@@ -171,14 +172,25 @@ final class ControleSeuilsDevis
      *
      * @return array{marge: float|null, remise: float|null}
      */
-    private function seuils(): array
+    private function seuils(?Devis $devis = null): array
     {
         $actifs = SeuilTarifaire::actifsParType();
+        $marge = $actifs[TypeSeuil::MargeGlobaleDevis->value] ?? null;
+        $remise = $actifs[TypeSeuil::RemiseMaximum->value] ?? null;
 
-        return [
-            'marge' => $actifs[TypeSeuil::MargeGlobaleDevis->value] ?? null,
-            'remise' => $actifs[TypeSeuil::RemiseMaximum->value] ?? null,
-        ];
+        // Une dérogation acceptée déplace la limite de ce devis (lot D4c) : elle ne
+        // peut que l'assouplir, et ne crée pas de contrôle là où il n'y a pas de seuil.
+        if ($devis !== null && ($marge !== null || $remise !== null)) {
+            $accordees = DerogationDevis::accordeesPour($devis);
+            if ($marge !== null && isset($accordees[TypeSeuil::MargeGlobaleDevis->value])) {
+                $marge = min($marge, $accordees[TypeSeuil::MargeGlobaleDevis->value]);
+            }
+            if ($remise !== null && isset($accordees[TypeSeuil::RemiseMaximum->value])) {
+                $remise = max($remise, $accordees[TypeSeuil::RemiseMaximum->value]);
+            }
+        }
+
+        return ['marge' => $marge, 'remise' => $remise];
     }
 
     /**

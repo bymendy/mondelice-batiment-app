@@ -212,3 +212,13 @@ Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
     Route::get('notifications', [\App\Http\Controllers\NotificationController::class, 'index']);
     Route::post('notifications/{notification}/lue', [\App\Http\Controllers\NotificationController::class, 'lue'])->whereUuid('notification');
 });
+
+// Lot D4c : dérogations aux seuils du devis.
+Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
+    Route::get('devis/{devis}/derogations', [\App\Http\Controllers\DerogationDevisController::class, 'duDevis'])->whereNumber('devis');
+    Route::post('devis/{devis}/derogations', [\App\Http\Controllers\DerogationDevisController::class, 'store'])->whereNumber('devis');
+    Route::get('derogations-devis', [\App\Http\Controllers\DerogationDevisController::class, 'index']);
+    Route::post('derogations-devis/{derogation}/accepter', [\App\Http\Controllers\DerogationDevisController::class, 'accepter'])->whereNumber('derogation');
+    Route::post('derogations-devis/{derogation}/refuser', [\App\Http\Controllers\DerogationDevisController::class, 'refuser'])->whereNumber('derogation');
+    Route::post('derogations-devis/{derogation}/annuler', [\App\Http\Controllers\DerogationDevisController::class, 'annuler'])->whereNumber('derogation');
+});
