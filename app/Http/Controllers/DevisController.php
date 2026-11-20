@@ -200,6 +200,6 @@ class DevisController extends Controller implements HasMiddleware
             ),
             'statut_libelle' => \App\Services\Devis\StatutsDevis::libelle((string) $devis->statut),
             'macro_etat' => \App\Services\Devis\StatutsDevis::macroEtat((string) $devis->statut),
-        ]);
+        ], \App\Services\Devis\MarcheDevis::pour($devis, request()->user()));
     }
 }

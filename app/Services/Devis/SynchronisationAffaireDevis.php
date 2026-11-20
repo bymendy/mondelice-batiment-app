@@ -88,7 +88,7 @@ class SynchronisationAffaireDevis
     public function appliquer(Devis $devis, string $statut, ?User $auteur): void
     {
         $code = self::ETAPE_PAR_STATUT[$statut] ?? null;
-        if ($code === null || $devis->opportunite_id === null) {
+        if ($code === null || $devis->opportunite_id === null || $devis->devis_parent_id !== null) {
             return;
         }
 

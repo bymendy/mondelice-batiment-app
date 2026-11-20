@@ -222,3 +222,8 @@ Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
     Route::post('derogations-devis/{derogation}/refuser', [\App\Http\Controllers\DerogationDevisController::class, 'refuser'])->whereNumber('derogation');
     Route::post('derogations-devis/{derogation}/annuler', [\App\Http\Controllers\DerogationDevisController::class, 'annuler'])->whereNumber('derogation');
 });
+
+// Lot D5 : avenants d'un devis accepté.
+Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
+    Route::post('devis/{devis}/avenants', [\App\Http\Controllers\AvenantDevisController::class, 'store'])->whereNumber('devis');
+});
