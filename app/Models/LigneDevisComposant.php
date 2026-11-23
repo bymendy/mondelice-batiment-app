@@ -46,6 +46,7 @@ class LigneDevisComposant extends Model
         'quantite',
         'quantite_base',
         'qualification',
+        'fourniture_id',
         'unite',
         'prix_achat_ht',
         'prix_vente_ht',

@@ -58,6 +58,7 @@ final class PresentateurComposant
             'article_id' => $composant->article_id,
             'type' => $composant->type->value,
             'qualification' => $composant->qualification,
+            'fourniture_id' => $composant->fourniture_id,
             'designation' => $composant->designation,
             'quantite' => $quantite,
             'unite' => $composant->unite,

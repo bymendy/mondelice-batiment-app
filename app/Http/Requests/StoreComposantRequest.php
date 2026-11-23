@@ -18,15 +18,15 @@ use Illuminate\Validation\Rule;
  *  - autres types : designation, unite et prix de vente obligatoires, prix
  *    d'achat facultatif.
  *
- * Le type `fourniture_base` n'est pas accepte tant que la Base de fournitures
- * n'existe pas.
+ * Le type `fourniture_base` (lot F1) cite une fourniture de la Base de
+ * fournitures : sa designation, son unite et ses prix viennent de la fourniture.
  *
  * L'autorisation (qui peut modifier cet article) est controlee avant la
  * validation : 403 plutot que 422.
  */
 class StoreComposantRequest extends FormRequest
 {
-    public const TYPES = ['main_oeuvre', 'fourniture_libre', 'materiel', 'frais'];
+    public const TYPES = ['main_oeuvre', 'fourniture_base', 'fourniture_libre', 'materiel', 'frais'];
 
     public const MAX_QUANTITE = '99999999.9999';
 
@@ -61,19 +61,22 @@ class StoreComposantRequest extends FormRequest
     public static function reglesLigne(array $donnees): array
     {
         $mainOeuvre = ($donnees['type'] ?? null) === 'main_oeuvre';
+        // Fourniture de la base : seuls la fourniture et la quantite comptent, le reste est lu dans la fourniture.
+        $base = ($donnees['type'] ?? null) === 'fourniture_base';
 
         return [
             'type' => ['required', Rule::in(self::TYPES)],
+            'fourniture_id' => $base ? ['required', 'integer', self::regleFourniture()] : ['prohibited'],
             'qualification' => $mainOeuvre
                 ? ['required', 'string', 'max:30', self::regleQualification()]
                 : ['prohibited'],
             'designation' => $mainOeuvre
                 ? ['nullable', 'string', 'max:255']
-                : ['required', 'string', 'max:255'],
+                : ($base ? ['nullable', 'string', 'max:255'] : ['required', 'string', 'max:255']),
             'quantite' => ['required', 'numeric', 'min:0', 'max:' . self::MAX_QUANTITE],
             'unite' => $mainOeuvre
                 ? ['nullable', Rule::in(['h'])]
-                : ['required', 'string', 'max:20'],
+                : ($base ? ['nullable', 'string', 'max:20'] : ['required', 'string', 'max:20']),
             'prix_achat_ht' => $mainOeuvre
                 ? ['prohibited']
                 : ['nullable', 'numeric', 'min:0', 'max:' . self::MAX_QUANTITE],
@@ -94,6 +97,21 @@ class StoreComposantRequest extends FormRequest
         return function (string $attribut, mixed $valeur, Closure $echec): void {
             if (! is_string($valeur) || ! array_key_exists($valeur, TauxHoraire::indexesParCode())) {
                 $echec('Cette qualification n\'existe pas dans les taux horaires de l\'entreprise.');
+            }
+        };
+    }
+
+    /**
+     * La fourniture citee doit exister dans la Base de fournitures de
+     * l'entreprise, et etre active (une fourniture archivee ne s'ajoute plus).
+     *
+     * @return Closure
+     */
+    public static function regleFourniture(): Closure
+    {
+        return function (string $attribut, mixed $valeur, Closure $echec): void {
+            if (! is_numeric($valeur) || ! \App\Models\Fourniture::query()->whereKey((int) $valeur)->where('actif', true)->exists()) {
+                $echec('Cette fourniture n\'existe pas (ou plus) dans la Base de fournitures de l\'entreprise.');
             }
         };
     }

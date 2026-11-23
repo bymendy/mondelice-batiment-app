@@ -121,6 +121,7 @@ class CopieArticleDansDevis
                     'quantite' => $ajustes[$rang]->quantite,
                     'quantite_base' => $estMainOeuvre ? $composant->quantite : null,
                     'qualification' => $estMainOeuvre ? (string) $composant->qualification : null,
+                    'fourniture_id' => $composant->fourniture_id,
                     'unite' => $composant->unite,
                     'prix_achat_ht' => $estMainOeuvre ? $tauxHoraire->cout_revient_ht : $composant->prix_achat_ht,
                     'prix_vente_ht' => $estMainOeuvre ? $tauxHoraire->taux_vente_ht : $composant->prix_vente_ht,

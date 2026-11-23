@@ -40,23 +40,25 @@ class UpdateComposantRequest extends FormRequest
         /** @var ArticleComposant $composant */
         $composant = $this->route('composant');
         $mainOeuvre = $composant->type->value === 'main_oeuvre';
+        // Fourniture de la base : designation, unite et prix se changent sur la fourniture.
+        $base = $composant->type->value === 'fourniture_base';
         $max = 'max:' . StoreComposantRequest::MAX_QUANTITE;
 
         return [
             'qualification' => $mainOeuvre
                 ? ['sometimes', 'required', 'string', 'max:30', StoreComposantRequest::regleQualification()]
                 : ['prohibited'],
-            'designation' => ['sometimes', 'required', 'string', 'max:255'],
+            'designation' => $base ? ['prohibited'] : ['sometimes', 'required', 'string', 'max:255'],
             'quantite' => ['sometimes', 'required', 'numeric', 'min:0', $max],
             'unite' => $mainOeuvre
                 ? ['prohibited']
-                : ['sometimes', 'required', 'string', 'max:20'],
+                : ($base ? ['prohibited'] : ['sometimes', 'required', 'string', 'max:20']),
             'prix_achat_ht' => $mainOeuvre
                 ? ['prohibited']
-                : ['sometimes', 'nullable', 'numeric', 'min:0', $max],
+                : ($base ? ['prohibited'] : ['sometimes', 'nullable', 'numeric', 'min:0', $max]),
             'prix_vente_ht' => $mainOeuvre
                 ? ['prohibited']
-                : ['sometimes', 'required', 'numeric', 'min:0', $max],
+                : ($base ? ['prohibited'] : ['sometimes', 'required', 'numeric', 'min:0', $max]),
             'ordre' => ['sometimes', 'required', 'integer', 'min:0', 'max:65535'],
         ];
     }

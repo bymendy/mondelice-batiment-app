@@ -86,7 +86,11 @@ class ArticleComposantController extends Controller implements HasMiddleware
             $donnees['designation'] = ! empty($donnees['designation']) ? $donnees['designation'] : $taux->libelle;
         } else {
             // Prix de vente saisi, sinon calcule depuis le prix d'achat avec la marge par defaut.
-            $donnees['prix_vente_ht'] = $this->prixVente->resoudre($donnees['prix_vente_ht'] ?? null, $donnees['prix_achat_ht'] ?? null);
+            if ($donnees['type'] === 'fourniture_base') {
+                $donnees = \App\Services\Bibliotheque\SynchronisationFournitures::valeursLigne((int) $donnees['fourniture_id']) + $donnees;
+            } else {
+                $donnees['prix_vente_ht'] = $this->prixVente->resoudre($donnees['prix_vente_ht'] ?? null, $donnees['prix_achat_ht'] ?? null);
+            }
         }
 
         $utilisateur = $request->user();
@@ -237,9 +241,15 @@ class ArticleComposantController extends Controller implements HasMiddleware
             ];
         }
 
+        if ($ligne['type'] === 'fourniture_base') {
+            return $commun + ['type' => 'fourniture_base', 'qualification' => null]
+                + \App\Services\Bibliotheque\SynchronisationFournitures::valeursLigne((int) $ligne['fourniture_id']);
+        }
+
         return $commun + [
             'type' => $ligne['type'],
             'qualification' => null,
+            'fourniture_id' => null,
             'designation' => $ligne['designation'],
             'unite' => $ligne['unite'],
             'prix_achat_ht' => $ligne['prix_achat_ht'] ?? null,

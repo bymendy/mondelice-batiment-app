@@ -239,3 +239,18 @@ Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
     Route::post('devis/{devis}/recalculer', [\App\Http\Controllers\RecalculDevisController::class, 'recalculer'])->whereNumber('devis');
     Route::post('devis/{devis}/parametres/appliquer-tva', [\App\Http\Controllers\RecalculDevisController::class, 'appliquerTva'])->whereNumber('devis');
 });
+
+// Tâche 3.6 bis, lot F1 : fournisseurs et Base de fournitures.
+Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
+    Route::get('fournisseurs', [\App\Http\Controllers\FournisseurController::class, 'index']);
+    Route::post('fournisseurs', [\App\Http\Controllers\FournisseurController::class, 'store']);
+    Route::get('fournisseurs/{fournisseur}', [\App\Http\Controllers\FournisseurController::class, 'show'])->whereNumber('fournisseur');
+    Route::put('fournisseurs/{fournisseur}', [\App\Http\Controllers\FournisseurController::class, 'update'])->whereNumber('fournisseur');
+    Route::delete('fournisseurs/{fournisseur}', [\App\Http\Controllers\FournisseurController::class, 'destroy'])->whereNumber('fournisseur');
+
+    Route::get('fournitures', [\App\Http\Controllers\FournitureController::class, 'index']);
+    Route::post('fournitures', [\App\Http\Controllers\FournitureController::class, 'store']);
+    Route::get('fournitures/{fourniture}', [\App\Http\Controllers\FournitureController::class, 'show'])->whereNumber('fourniture');
+    Route::put('fournitures/{fourniture}', [\App\Http\Controllers\FournitureController::class, 'update'])->whereNumber('fourniture');
+    Route::delete('fournitures/{fourniture}', [\App\Http\Controllers\FournitureController::class, 'destroy'])->whereNumber('fourniture');
+});

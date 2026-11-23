@@ -29,11 +29,11 @@ class PurchaseOrder extends Model
     ];
 
     /**
-     * @return BelongsTo<Supplier, PurchaseOrder>
+     * @return BelongsTo<Fournisseur, PurchaseOrder>
      */
     public function supplier(): BelongsTo
     {
-        return $this->belongsTo(Supplier::class);
+        return $this->belongsTo(Fournisseur::class, 'supplier_id');
     }
 
     /**
