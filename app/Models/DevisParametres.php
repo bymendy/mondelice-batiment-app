@@ -35,6 +35,7 @@ class DevisParametres extends Model
         'tva_defaut',
         'tva_source',
         'marge_fournitures',
+        'marge_fournitures_source',
         'frais_generaux_fournitures',
     ];
 

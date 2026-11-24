@@ -78,12 +78,26 @@ class ParametresDevisController extends Controller implements HasMiddleware
                 },
             ],
             'tva_defaut' => ['sometimes', 'numeric', 'between:0,100'],
+            'marge_fournitures' => ['sometimes', 'numeric', 'between:0,99.99'],
             'taux_horaires' => ['sometimes', 'array', 'max:100'],
             'taux_horaires.*.code' => ['required', 'string', 'max:30'],
             'taux_horaires.*.taux_vente_ht' => ['required', 'numeric', 'between:0.01,9999.99'],
         ], [
             'coefficient_difficulte.between' => 'Le coefficient de difficulté va de 1,00 à 1,50.',
         ]);
+
+        // Lot F2b : la marge des fournitures du devis respecte le seuil fixe par la Direction.
+        if (array_key_exists('marge_fournitures', $donnees) && ! $request->user()->can('parametres.seuils')) {
+            $seuil = \App\Models\SeuilTarifaire::actifsParType()[\App\Enums\TypeSeuil::MargeFournitures->value] ?? null;
+            if ($seuil !== null && (float) $donnees['marge_fournitures'] + 0.000001 < (float) $seuil) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'marge_fournitures' => sprintf(
+                        'Vous dépassez le seuil fixé par la Direction : la marge des fournitures ne descend pas sous %s %%.',
+                        rtrim(rtrim(number_format((float) $seuil, 2, ',', ''), '0'), ',')
+                    ),
+                ]);
+            }
+        }
 
         $changement = $service->modifier($fiche, $donnees);
 

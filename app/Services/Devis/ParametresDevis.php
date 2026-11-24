@@ -80,6 +80,7 @@ class ParametresDevis
                     'tva_defaut' => $origine->tva_defaut,
                     'tva_source' => $origine->tva_source,
                     'marge_fournitures' => $origine->marge_fournitures,
+                    'marge_fournitures_source' => $origine->marge_fournitures_source,
                     'frais_generaux_fournitures' => $origine->frais_generaux_fournitures,
                 ]);
                 $lignes = DevisTauxHoraire::query()->where('devis_id', $devis->devis_parent_id)->orderBy('ordre')->orderBy('id')->get();
@@ -202,6 +203,17 @@ class ParametresDevis
                 $parametres->tva_source = $this->egal($apres['tva_defaut'], Parametre::lire('tva_defaut')) ? 'entreprise' : 'modifie';
             }
 
+            if (array_key_exists('marge_fournitures', $donnees)
+                && ($parametres->marge_fournitures === null || ! $this->egal($donnees['marge_fournitures'], $parametres->marge_fournitures))) {
+                $avant['marge_fournitures'] = $parametres->marge_fournitures === null ? null : (float) $parametres->marge_fournitures;
+                $apres['marge_fournitures'] = round((float) $donnees['marge_fournitures'], 2);
+                $parametres->marge_fournitures = $apres['marge_fournitures'];
+                $entreprise = Parametre::lire('marge_fournitures_defaut');
+                $parametres->marge_fournitures_source = ($entreprise !== null && $this->egal($apres['marge_fournitures'], $entreprise))
+                    ? 'entreprise'
+                    : 'modifie';
+            }
+
             $parametres->save();
 
             foreach ($donnees['taux_horaires'] ?? [] as $rang => $demande) {
@@ -265,6 +277,7 @@ class ParametresDevis
         ];
         if ($voitMarge) {
             $valeurs['marge_fournitures'] = $parametres->marge_fournitures === null ? null : (float) $parametres->marge_fournitures;
+            $valeurs['marge_fournitures_source'] = (string) $parametres->marge_fournitures_source;
             $valeurs['frais_generaux_fournitures'] = (float) $parametres->frais_generaux_fournitures;
         }
 

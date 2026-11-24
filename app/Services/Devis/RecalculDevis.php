@@ -128,6 +128,9 @@ class RecalculDevis
         $difficulte = (float) $parametres->coefficient_difficulte;
         // Lot F2a : le revient d'une fourniture inclut les frais generaux copies dans le devis.
         $frais = 1 + (float) $parametres->frais_generaux_fournitures / 100;
+        // Lot F2b : marge des fournitures du devis, pour les fournitures a prix calcule.
+        $margeFournitures = $parametres->marge_fournitures;
+        $fraisPct = (float) $parametres->frais_generaux_fournitures;
 
         $compteurs = [
             'lignes_recalculees' => 0,
@@ -172,6 +175,13 @@ class RecalculDevis
                         if ($composant->isDirty()) {
                             $composant->save();
                         }
+                    }
+                }
+
+                if ($composant->prix_vente_calcule && $margeFournitures !== null && $composant->prix_achat_ht !== null) {
+                    $composant->prix_vente_ht = \App\Services\Bibliotheque\PrixVenteFourniture::calculer((float) $composant->prix_achat_ht, (float) $margeFournitures, $fraisPct);
+                    if ($composant->isDirty()) {
+                        $composant->save();
                     }
                 }
 

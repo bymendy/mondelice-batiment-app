@@ -69,10 +69,17 @@ class CopieArticleDansDevis
         $taux = $this->parametres->tauxPourCalcul($devis, $parametres, $codes);
 
         // Sous-detail ajuste : la difficulte multiplie le temps de main-d'oeuvre.
-        $ajustes = $origines->map(function (ArticleComposant $composant) use ($difficulte): ArticleComposant {
+        // Lot F2b : une fourniture de la base a prix CALCULE suit la marge et les frais generaux du devis.
+        $calculees = $this->fournituresAPrixCalcule($origines);
+        $margeDevis = $parametres->marge_fournitures;
+        $fraisDevis = (float) $parametres->frais_generaux_fournitures;
+
+        $ajustes = $origines->map(function (ArticleComposant $composant) use ($difficulte, $calculees, $margeDevis, $fraisDevis): ArticleComposant {
             $copie = clone $composant;
             if ($composant->type === TypeComposant::MainOeuvre) {
                 $copie->quantite = round((float) $composant->quantite * $difficulte, 4);
+            } elseif ($margeDevis !== null && $composant->prix_achat_ht !== null && isset($calculees[(int) $composant->fourniture_id])) {
+                $copie->prix_vente_ht = \App\Services\Bibliotheque\PrixVenteFourniture::calculer((float) $composant->prix_achat_ht, (float) $margeDevis, $fraisDevis);
             }
 
             return $copie;
@@ -92,7 +99,7 @@ class CopieArticleDansDevis
         // TVA : celle de l'article, sauf si la TVA du devis a ete reglee a la main.
         $tva = $parametres->tva_source === 'modifie' ? $parametres->tva_defaut : $article->taux_tva;
 
-        return DB::transaction(function () use ($devis, $article, $quantite, $lotId, $emplacementId, $resultat, $taux, $origines, $ajustes, $tva): LigneDevis {
+        return DB::transaction(function () use ($devis, $article, $quantite, $lotId, $emplacementId, $resultat, $taux, $origines, $ajustes, $tva, $calculees): LigneDevis {
             $ligne = LigneDevis::create([
                 'devis_id' => $devis->getKey(),
                 'lot_id' => $lotId,
@@ -125,7 +132,8 @@ class CopieArticleDansDevis
                     'fourniture_id' => $composant->fourniture_id,
                     'unite' => $composant->unite,
                     'prix_achat_ht' => $estMainOeuvre ? $tauxHoraire->cout_revient_ht : $composant->prix_achat_ht,
-                    'prix_vente_ht' => $estMainOeuvre ? $tauxHoraire->taux_vente_ht : $composant->prix_vente_ht,
+                    'prix_vente_ht' => $estMainOeuvre ? $tauxHoraire->taux_vente_ht : $ajustes[$rang]->prix_vente_ht,
+                    'prix_vente_calcule' => isset($calculees[(int) $composant->fourniture_id]),
                     'taux_horaire_libelle' => $estMainOeuvre ? $tauxHoraire->libelle : null,
                     'taux_horaire_vente' => $estMainOeuvre ? $tauxHoraire->taux_vente_ht : null,
                     'cout_revient_horaire' => $estMainOeuvre ? $tauxHoraire->cout_revient_ht : null,
@@ -135,5 +143,27 @@ class CopieArticleDansDevis
 
             return $ligne->load('composants');
         });
+    }
+
+    /**
+     * Fournitures de la base dont le prix de vente est calcule (pas saisi),
+     * parmi celles que cite le sous-detail (lot F2b).
+     *
+     * @param \Illuminate\Support\Collection<int, ArticleComposant> $composants
+     * @return array<int, true> Indexe par identifiant de fourniture.
+     */
+    private function fournituresAPrixCalcule(\Illuminate\Support\Collection $composants): array
+    {
+        $ids = $composants->pluck('fourniture_id')->filter()->unique()->values()->all();
+        if ($ids === []) {
+            return [];
+        }
+
+        $calculees = [];
+        foreach (\App\Models\Fourniture::withTrashed()->whereIn('id', $ids)->where('prix_vente_saisi', false)->pluck('id') as $id) {
+            $calculees[(int) $id] = true;
+        }
+
+        return $calculees;
     }
 }
