@@ -53,7 +53,7 @@ final class PrixVenteFourniture
             ]);
         }
 
-        return self::calculer((float) $achat, (float) $marge);
+        return self::calculer((float) $achat, (float) $marge, self::fraisGenerauxPct());
     }
 
     /**
@@ -61,8 +61,38 @@ final class PrixVenteFourniture
      * @param float $margePct Marge en % du prix de vente (0 a moins de 100).
      * @return float Prix de vente unitaire, a 4 decimales.
      */
-    public static function calculer(float $achat, float $margePct): float
+    public static function calculer(float $achat, float $margePct, float $fraisGenerauxPct = 0.0): float
     {
-        return round($achat / (1 - $margePct / 100), 4);
+        return round($achat * (1 + $fraisGenerauxPct / 100) / (1 - $margePct / 100), 4);
     }
+
+    /**
+     * Frais generaux sur fournitures de l'entreprise courante, en % (lot F2a).
+     * Garde en memoire par entreprise ; oublie quand le reglage change
+     * (Parametre::ecrire). Vaut 0 sans entreprise courante.
+     *
+     * @return float
+     */
+    public static function fraisGenerauxPct(): float
+    {
+        $tenant = tenant_id();
+        if (! $tenant) {
+            return 0.0;
+        }
+
+        return self::$frais[(string) $tenant] ??= (float) Parametre::lire('frais_generaux_fournitures');
+    }
+
+    /**
+     * @return void
+     */
+    public static function oublier(): void
+    {
+        self::$frais = [];
+    }
+
+    /**
+     * @var array<string, float>
+     */
+    private static array $frais = [];
 }

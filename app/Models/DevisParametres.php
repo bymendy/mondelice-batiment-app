@@ -35,6 +35,7 @@ class DevisParametres extends Model
         'tva_defaut',
         'tva_source',
         'marge_fournitures',
+        'frais_generaux_fournitures',
     ];
 
     protected $casts = [
@@ -42,6 +43,7 @@ class DevisParametres extends Model
         'coefficient_zone' => 'decimal:2',
         'tva_defaut' => 'decimal:2',
         'marge_fournitures' => 'decimal:2',
+        'frais_generaux_fournitures' => 'decimal:2',
     ];
 
     /**

@@ -126,6 +126,8 @@ class RecalculDevis
         // Lignes d'avant ce lot : la qualification n'était pas notée, on la retrouve par son libellé.
         $codeParLibelle = DevisTauxHoraire::query()->where('devis_id', $devis->getKey())->pluck('code', 'libelle')->all();
         $difficulte = (float) $parametres->coefficient_difficulte;
+        // Lot F2a : le revient d'une fourniture inclut les frais generaux copies dans le devis.
+        $frais = 1 + (float) $parametres->frais_generaux_fournitures / 100;
 
         $compteurs = [
             'lignes_recalculees' => 0,
@@ -177,7 +179,12 @@ class RecalculDevis
                 if ($composant->prix_achat_ht === null) {
                     $revientComplet = false;
                 } else {
-                    $revientCts += Arrondi::ligneEnCentimes($composant->quantite, $composant->prix_achat_ht);
+                    $revientCts += Arrondi::ligneEnCentimes(
+                        $composant->quantite,
+                        in_array($composant->type, ['fourniture_base', 'fourniture_libre'], true)
+                            ? (float) $composant->prix_achat_ht * $frais
+                            : $composant->prix_achat_ht
+                    );
                 }
             }
 

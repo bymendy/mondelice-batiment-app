@@ -98,6 +98,8 @@ final class PresentateurArticlePrix
             $donnees['coefficient'] = $resultat->coefficient;
             $donnees['taux_marge_pct'] = $resultat->tauxMargePct;
             $donnees['prix_revient_pose_seule_ht'] = $resultat->prixRevientPoseSeuleHt;
+            // Lot F2a : un prix force peut passer sous le seuil quand un cout augmente apres coup.
+            $donnees += ArticlesSousSeuil::evaluer($article);
         }
 
         return $donnees;

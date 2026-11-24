@@ -80,6 +80,7 @@ class ParametresDevis
                     'tva_defaut' => $origine->tva_defaut,
                     'tva_source' => $origine->tva_source,
                     'marge_fournitures' => $origine->marge_fournitures,
+                    'frais_generaux_fournitures' => $origine->frais_generaux_fournitures,
                 ]);
                 $lignes = DevisTauxHoraire::query()->where('devis_id', $devis->devis_parent_id)->orderBy('ordre')->orderBy('id')->get();
                 foreach ($lignes as $taux) {
@@ -105,6 +106,7 @@ class ParametresDevis
                 'tva_defaut' => (float) Parametre::lire('tva_defaut'),
                 'tva_source' => 'entreprise',
                 'marge_fournitures' => Parametre::lire('marge_fournitures_defaut'),
+                'frais_generaux_fournitures' => (float) Parametre::lire('frais_generaux_fournitures'),
             ]);
             foreach (TauxHoraire::query()->orderBy('ordre')->orderBy('id')->get() as $taux) {
                 $this->copierTaux($devis, $taux);
@@ -263,6 +265,7 @@ class ParametresDevis
         ];
         if ($voitMarge) {
             $valeurs['marge_fournitures'] = $parametres->marge_fournitures === null ? null : (float) $parametres->marge_fournitures;
+            $valeurs['frais_generaux_fournitures'] = (float) $parametres->frais_generaux_fournitures;
         }
 
         $taux = DevisTauxHoraire::query()

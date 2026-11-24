@@ -49,6 +49,11 @@ class Parametre extends Model
             'defaut' => 20,
             'regle' => 'numeric|min:0|max:100',
         ],
+        'frais_generaux_fournitures' => [
+            'libelle' => 'Frais généraux sur les fournitures (en % du prix d\'achat), ajoutés au prix de revient',
+            'defaut' => 0,
+            'regle' => 'numeric|min:0|max:100',
+        ],
         'marge_zone_orange_points' => [
             'libelle' => 'Indicateur de marge du devis : largeur de la zone orange au-dessus du seuil (en points de marge)',
             'defaut' => 5,
@@ -103,12 +108,15 @@ class Parametre extends Model
             $vide = new static(['cle' => $cle]);
             $vide->valeur = null;
 
+            self::apresEcriture($cle);
+
             return $vide;
         }
 
         $ligne = static::query()->firstOrNew(['cle' => $cle]);
         $ligne->valeur = $valeur;
         $ligne->save();
+        self::apresEcriture($cle);
 
         return $ligne;
     }
@@ -125,6 +133,21 @@ class Parametre extends Model
 
         if (! tenant_id()) {
             throw new \RuntimeException('Aucun tenant courant : impossible de lire ou ecrire un reglage.');
+        }
+    }
+
+    /**
+     * Apres l'ecriture d'un reglage de chiffrage des fournitures (lot F2a) :
+     * les fournitures a prix calcule sont recalculees, puis leurs articles.
+     *
+     * @param string $cle
+     * @return void
+     */
+    private static function apresEcriture(string $cle): void
+    {
+        if (in_array($cle, ['frais_generaux_fournitures', 'marge_fournitures_defaut'], true)) {
+            \App\Services\Bibliotheque\PrixVenteFourniture::oublier();
+            \App\Services\Bibliotheque\RecalculFournitures::apresChangementDeReglage();
         }
     }
 }

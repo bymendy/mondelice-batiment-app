@@ -325,7 +325,8 @@ class ArticlePrix extends Model
         return (new CalculPrixArticle())->calculer(
             $this->composants,
             $tauxParCode,
-            $this->prix_force_ht !== null ? (float) $this->prix_force_ht : null
+            $this->prix_force_ht !== null ? (float) $this->prix_force_ht : null,
+            \App\Services\Bibliotheque\PrixVenteFourniture::fraisGenerauxPct()
         );
     }
 }

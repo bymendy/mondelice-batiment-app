@@ -99,6 +99,10 @@ class ArticlePrixController extends Controller implements HasMiddleware
         if ($request->filled('actif')) {
             $query->where('actif', $request->boolean('actif'));
         }
+        if ($request->boolean('sous_seuil')) {
+            abort_unless($utilisateur->can('bibliotheque.voir_prix_achat'), 403);
+            $query->whereIn('articles_prix.id', \App\Services\Bibliotheque\ArticlesSousSeuil::ids());
+        }
 
         if ($request->filled('type_article')) {
             $query->where('type_article', $request->string('type_article'));

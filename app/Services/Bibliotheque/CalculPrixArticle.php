@@ -46,7 +46,7 @@ class CalculPrixArticle
      * @throws QualificationInconnueException Une ligne de main-d'oeuvre cite une
      *         qualification absente de $tauxParCode.
      */
-    public function calculer(iterable $composants, array $tauxParCode, ?float $prixForceHt = null): ResultatPrixArticle
+    public function calculer(iterable $composants, array $tauxParCode, ?float $prixForceHt = null, float $fraisGenerauxPct = 0.0): ResultatPrixArticle
     {
         // Tout est compte en centimes entiers : les montants de ligne sont deja arrondis.
         $venteCts = 0;
@@ -78,7 +78,11 @@ class CalculPrixArticle
                 $venteLigne = Arrondi::ligneEnCentimes($quantite, $composant->prix_vente_ht);
                 $revientLigne = $composant->prix_achat_ht === null
                     ? null
-                    : Arrondi::ligneEnCentimes($quantite, $composant->prix_achat_ht);
+                    : Arrondi::ligneEnCentimes(
+                        $quantite,
+                        // Lot F2a : les frais generaux s'ajoutent au revient des fournitures.
+                        $estFourniture ? (float) $composant->prix_achat_ht * (1 + $fraisGenerauxPct / 100) : $composant->prix_achat_ht
+                    );
             }
 
             $venteCts += $venteLigne;

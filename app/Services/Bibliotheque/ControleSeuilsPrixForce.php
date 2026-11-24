@@ -138,7 +138,13 @@ final class ControleSeuilsPrixForce
                 return null;
             }
 
-            $revientAutres += Arrondi::ligne($composant->quantite, $composant->prix_achat_ht);
+            // Lot F2a : les frais generaux s'ajoutent au revient des fournitures.
+            $revientAutres += Arrondi::ligne(
+                $composant->quantite,
+                in_array($composant->type, [TypeComposant::FournitureLibre, TypeComposant::FournitureBase], true)
+                    ? (float) $composant->prix_achat_ht * (1 + \App\Services\Bibliotheque\PrixVenteFourniture::fraisGenerauxPct() / 100)
+                    : $composant->prix_achat_ht
+            );
         }
 
         if ($nombre === 0) {

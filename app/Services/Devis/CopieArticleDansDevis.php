@@ -82,7 +82,8 @@ class CopieArticleDansDevis
             $resultat = (new CalculPrixArticle())->calculer(
                 $ajustes,
                 $taux,
-                $article->prix_force_ht !== null ? (float) $article->prix_force_ht : null
+                $article->prix_force_ht !== null ? (float) $article->prix_force_ht : null,
+                (float) $parametres->frais_generaux_fournitures
             );
         } catch (QualificationInconnueException $e) {
             throw ValidationException::withMessages(['article_prix_id' => $e->getMessage()]);

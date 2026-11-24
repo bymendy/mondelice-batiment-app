@@ -92,7 +92,11 @@ final class PresentateurComposant
 
         if ($this->voirPrixAchat) {
             $donnees['prix_achat_unitaire_ht'] = $achatUnitaire;
-            $donnees['total_revient_ht'] = $achatUnitaire !== null ? Arrondi::ligne($quantite, $achatUnitaire) : null;
+            // Lot F2a : le revient d'une fourniture inclut les frais generaux de l'entreprise.
+            $coefficient = in_array($composant->type, [TypeComposant::FournitureLibre, TypeComposant::FournitureBase], true)
+                ? 1 + \App\Services\Bibliotheque\PrixVenteFourniture::fraisGenerauxPct() / 100
+                : 1;
+            $donnees['total_revient_ht'] = $achatUnitaire !== null ? Arrondi::ligne($quantite, $achatUnitaire * $coefficient) : null;
         }
 
         return $donnees;

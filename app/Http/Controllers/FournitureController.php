@@ -170,7 +170,10 @@ class FournitureController extends Controller implements HasMiddleware
         });
 
         return response()->json(
-            $this->presenter($request, $fiche->refresh()->load('fournisseur')) + ['articles_mis_a_jour' => $articles]
+            $this->presenter($request, $fiche->refresh()->load('fournisseur')) + [
+                'articles_mis_a_jour' => $articles,
+                'articles_sous_seuil' => \App\Services\Bibliotheque\ArticlesSousSeuil::utilisant((int) $fiche->getKey()),
+            ]
         );
     }
 
