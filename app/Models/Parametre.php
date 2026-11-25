@@ -49,6 +49,11 @@ class Parametre extends Model
             'defaut' => 20,
             'regle' => 'numeric|min:0|max:100',
         ],
+        'import_ecart_prix_pct' => [
+            'libelle' => 'Import de catalogue : écart de prix (en %) au-delà duquel une ligne attend une validation',
+            'defaut' => 20,
+            'regle' => 'numeric|min:0|max:1000',
+        ],
         'frais_generaux_fournitures' => [
             'libelle' => 'Frais généraux sur les fournitures (en % du prix d\'achat), ajoutés au prix de revient',
             'defaut' => 0,

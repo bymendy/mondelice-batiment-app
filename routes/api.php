@@ -254,3 +254,13 @@ Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
     Route::put('fournitures/{fourniture}', [\App\Http\Controllers\FournitureController::class, 'update'])->whereNumber('fourniture');
     Route::delete('fournitures/{fourniture}', [\App\Http\Controllers\FournitureController::class, 'destroy'])->whereNumber('fourniture');
 });
+
+// Tâche 3.6 bis, lot F3a : import des catalogues des fournisseurs (analyse).
+Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
+    Route::get('imports-fournitures', [\App\Http\Controllers\ImportFournituresController::class, 'index']);
+    Route::post('imports-fournitures', [\App\Http\Controllers\ImportFournituresController::class, 'store']);
+    Route::get('imports-fournitures/{import}', [\App\Http\Controllers\ImportFournituresController::class, 'show'])->whereNumber('import');
+    Route::put('imports-fournitures/{import}/correspondance', [\App\Http\Controllers\ImportFournituresController::class, 'correspondance'])->whereNumber('import');
+    Route::get('imports-fournitures/{import}/lignes', [\App\Http\Controllers\ImportFournituresController::class, 'lignes'])->whereNumber('import');
+    Route::delete('imports-fournitures/{import}', [\App\Http\Controllers\ImportFournituresController::class, 'destroy'])->whereNumber('import');
+});
