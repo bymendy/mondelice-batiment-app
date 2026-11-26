@@ -27,7 +27,9 @@ use LogicException;
  * @property int $article_id
  * @property TypeComposant $type
  * @property string|null $qualification
- * @property int|null $fourniture_id
+ * @property int|null $fourniture_id Fourniture standard.
+ * @property int|null $fourniture_eco_id Variante économique (lot F4a).
+ * @property int|null $fourniture_haut_id Variante haut de gamme (lot F4a).
  * @property string $designation
  * @property float $quantite
  * @property string $unite
@@ -46,6 +48,8 @@ class ArticleComposant extends Model
         'type',
         'qualification',
         'fourniture_id',
+        'fourniture_eco_id',
+        'fourniture_haut_id',
         'designation',
         'quantite',
         'unite',

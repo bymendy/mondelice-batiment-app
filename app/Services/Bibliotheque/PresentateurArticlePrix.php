@@ -90,6 +90,8 @@ final class PresentateurArticlePrix
         $donnees['prix_vente_sous_detail_ht'] = $resultat->prixVenteSousDetailHt;
         $donnees['ecart_prix_force_ht'] = $resultat->ecartPrixForceHt;
         $donnees['prix_pose_seule_ht'] = $resultat->prixPoseSeuleHt;
+        // Lot F4a : prix aux trois niveaux de prestation.
+        $donnees['niveaux_prestation'] = NiveauPrestation::prixParNiveau($article, $this->tauxParCode, $this->voirPrixAchat);
 
         if ($this->voirPrixAchat) {
             $donnees['prix_revient_ht'] = $resultat->prixRevientHt;

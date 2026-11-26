@@ -67,6 +67,13 @@ class StoreComposantRequest extends FormRequest
         return [
             'type' => ['required', Rule::in(self::TYPES)],
             'fourniture_id' => $base ? ['required', 'integer', self::regleFourniture()] : ['prohibited'],
+            // Lot F4a : variantes de gamme, d'une autre fourniture de la même unité.
+            'fourniture_eco_id' => $base
+                ? ['nullable', 'integer', self::regleFourniture(), \App\Services\Bibliotheque\NiveauPrestation::regleVariante($donnees['fourniture_id'] ?? null)]
+                : ['prohibited'],
+            'fourniture_haut_id' => $base
+                ? ['nullable', 'integer', self::regleFourniture(), \App\Services\Bibliotheque\NiveauPrestation::regleVariante($donnees['fourniture_id'] ?? null)]
+                : ['prohibited'],
             'qualification' => $mainOeuvre
                 ? ['required', 'string', 'max:30', self::regleQualification()]
                 : ['prohibited'],

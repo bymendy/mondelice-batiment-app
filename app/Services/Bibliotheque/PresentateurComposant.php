@@ -66,6 +66,11 @@ final class PresentateurComposant
             'ordre' => $composant->ordre,
         ];
 
+        if ($composant->type === TypeComposant::FournitureBase) {
+            // Lot F4a : variantes économique et haut de gamme, lues dans la Base de fournitures.
+            $donnees += NiveauPrestation::presenterVariantes($composant, $this->voirPrixAchat);
+        }
+
         if ($this->voirPrixAchat) {
             $donnees['prix_achat_ht'] = $composant->prix_achat_ht !== null ? (float) $composant->prix_achat_ht : null;
         }

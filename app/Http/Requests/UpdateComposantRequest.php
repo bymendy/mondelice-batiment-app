@@ -60,6 +60,13 @@ class UpdateComposantRequest extends FormRequest
                 ? ['prohibited']
                 : ($base ? ['prohibited'] : ['sometimes', 'required', 'numeric', 'min:0', $max]),
             'ordre' => ['sometimes', 'required', 'integer', 'min:0', 'max:65535'],
+            // Lot F4a : variantes de gamme (null retire la variante).
+            'fourniture_eco_id' => $base
+                ? ['sometimes', 'nullable', 'integer', StoreComposantRequest::regleFourniture(), \App\Services\Bibliotheque\NiveauPrestation::regleVariante($composant->fourniture_id)]
+                : ['prohibited'],
+            'fourniture_haut_id' => $base
+                ? ['sometimes', 'nullable', 'integer', StoreComposantRequest::regleFourniture(), \App\Services\Bibliotheque\NiveauPrestation::regleVariante($composant->fourniture_id)]
+                : ['prohibited'],
         ];
     }
 }

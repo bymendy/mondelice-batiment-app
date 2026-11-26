@@ -101,6 +101,7 @@ class ArticleComposantController extends Controller implements HasMiddleware
 
             $composant = $articlePrix->composants()->create($donnees);
             $this->journal->composantAjoute($utilisateur, $articlePrix, $composant);
+            \App\Services\Bibliotheque\NiveauPrestation::journaliser($utilisateur, $articlePrix, $composant, \App\Services\Bibliotheque\NiveauPrestation::aucune());
 
             return $composant;
         });
@@ -122,8 +123,10 @@ class ArticleComposantController extends Controller implements HasMiddleware
 
         DB::transaction(function () use ($composant, $request, $articlePrix, $utilisateur): void {
             $avant = $this->journal->instantane($composant, JournalPrix::CHAMPS_COMPOSANT);
+            $variantesAvant = \App\Services\Bibliotheque\NiveauPrestation::variantes($composant);
             $composant->update($request->validated());
             $this->journal->composantModifie($utilisateur, $articlePrix, $composant, $avant);
+            \App\Services\Bibliotheque\NiveauPrestation::journaliser($utilisateur, $articlePrix, $composant, $variantesAvant);
         });
 
         return response()->json($this->ligneEtArticle($request->user(), $articlePrix, $composant->refresh()));
@@ -188,10 +191,14 @@ class ArticleComposantController extends Controller implements HasMiddleware
                 $id = isset($ligne['id']) && is_numeric($ligne['id']) ? (int) $ligne['id'] : null;
 
                 if ($id !== null) {
-                    $existants->get($id)->update(Arr::except($donnees, ['type']));
+                    $existant = $existants->get($id);
+                    $variantesAvant = \App\Services\Bibliotheque\NiveauPrestation::variantes($existant);
+                    $existant->update(Arr::except($donnees, ['type']));
+                    \App\Services\Bibliotheque\NiveauPrestation::journaliser($utilisateur, $articlePrix, $existant, $variantesAvant);
                     $gardees[$id] = true;
                 } else {
-                    $articlePrix->composants()->create($donnees);
+                    $nouveau = $articlePrix->composants()->create($donnees);
+                    \App\Services\Bibliotheque\NiveauPrestation::journaliser($utilisateur, $articlePrix, $nouveau, \App\Services\Bibliotheque\NiveauPrestation::aucune());
                 }
             }
 
@@ -242,8 +249,13 @@ class ArticleComposantController extends Controller implements HasMiddleware
         }
 
         if ($ligne['type'] === 'fourniture_base') {
-            return $commun + ['type' => 'fourniture_base', 'qualification' => null]
-                + \App\Services\Bibliotheque\SynchronisationFournitures::valeursLigne((int) $ligne['fourniture_id']);
+            // Lot F4a : chaque ligne est décrite en entier, une variante absente est retirée.
+            return $commun + [
+                'type' => 'fourniture_base',
+                'qualification' => null,
+                'fourniture_eco_id' => $ligne['fourniture_eco_id'] ?? null,
+                'fourniture_haut_id' => $ligne['fourniture_haut_id'] ?? null,
+            ] + \App\Services\Bibliotheque\SynchronisationFournitures::valeursLigne((int) $ligne['fourniture_id']);
         }
 
         return $commun + [

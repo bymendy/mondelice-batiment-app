@@ -57,7 +57,11 @@ final class SynchronisationFournitures
      */
     public static function articlesUtilisant(Fourniture $fourniture): int
     {
-        return ArticleComposant::query()->where('fourniture_id', $fourniture->getKey())->distinct()->count('article_id');
+        $id = $fourniture->getKey();
+
+        return ArticleComposant::query()
+            ->where(fn ($q) => $q->where('fourniture_id', $id)->orWhere('fourniture_eco_id', $id)->orWhere('fourniture_haut_id', $id))
+            ->distinct()->count('article_id');
     }
 
     /**
