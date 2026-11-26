@@ -237,6 +237,9 @@ class ImportFournituresController extends Controller implements HasMiddleware
             'nb_lignes' => $import->nb_lignes,
             'resume' => $import->resume,
             'cree_le' => $import->created_at?->toIso8601String(),
+            'applique_le' => $import->applique_le?->toIso8601String(),
+            'applique_par' => $import->applique_par !== null ? ['id' => (int) $import->applique_par] : null,
+            'bilan' => $import->bilan,
         ];
 
         if ($detail) {

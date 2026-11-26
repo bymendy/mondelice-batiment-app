@@ -264,3 +264,11 @@ Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
     Route::get('imports-fournitures/{import}/lignes', [\App\Http\Controllers\ImportFournituresController::class, 'lignes'])->whereNumber('import');
     Route::delete('imports-fournitures/{import}', [\App\Http\Controllers\ImportFournituresController::class, 'destroy'])->whereNumber('import');
 });
+
+// Tâche 3.6 bis, lot F3b : choix des lignes, application des imports, export des fournitures.
+Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
+    Route::put('imports-fournitures/{import}/retenues', [\App\Http\Controllers\ImportFournituresApplicationController::class, 'retenirPlusieurs'])->whereNumber('import');
+    Route::put('imports-fournitures/{import}/lignes/{ligne}', [\App\Http\Controllers\ImportFournituresApplicationController::class, 'retenir'])->whereNumber('import')->whereNumber('ligne');
+    Route::post('imports-fournitures/{import}/appliquer', [\App\Http\Controllers\ImportFournituresApplicationController::class, 'appliquer'])->whereNumber('import');
+    Route::get('fournitures/export', \App\Http\Controllers\ExportFournituresController::class);
+});

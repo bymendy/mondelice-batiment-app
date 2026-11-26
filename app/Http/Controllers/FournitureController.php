@@ -223,6 +223,7 @@ class FournitureController extends Controller implements HasMiddleware
             'prix_achat_ht' => $prix,
             'prix_vente_ht' => $prix,
             'actif' => ['sometimes', 'boolean'],
+            'date_tarif' => ['nullable', 'date'],
         ];
     }
 
@@ -283,6 +284,7 @@ class FournitureController extends Controller implements HasMiddleware
             'prix_vente_ht' => (float) $fourniture->prix_vente_ht,
             'prix_vente_saisi' => (bool) $fourniture->prix_vente_saisi,
             'actif' => (bool) $fourniture->actif,
+            'date_tarif' => $fourniture->date_tarif?->format('Y-m-d'),
         ];
 
         if ($request->user()?->can('bibliotheque.voir_prix_achat')) {

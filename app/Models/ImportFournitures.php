@@ -57,6 +57,9 @@ class ImportFournitures extends Model
         'unite_defaut',
         'seuil_ecart_pct',
         'resume',
+        'applique_le',
+        'applique_par',
+        'bilan',
     ];
 
     protected $casts = [
@@ -68,6 +71,8 @@ class ImportFournitures extends Model
         'correspondance' => 'array',
         'seuil_ecart_pct' => 'decimal:2',
         'resume' => 'array',
+        'applique_le' => 'datetime',
+        'bilan' => 'array',
     ];
 
     /**

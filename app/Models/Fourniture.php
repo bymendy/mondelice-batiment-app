@@ -33,6 +33,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $prix_vente_ht
  * @property bool $prix_vente_saisi
  * @property bool $actif
+ * @property \Illuminate\Support\Carbon|null $date_tarif Date du tarif du fournisseur (information).
  */
 class Fourniture extends Model
 {
@@ -55,6 +56,7 @@ class Fourniture extends Model
         'prix_vente_ht',
         'prix_vente_saisi',
         'actif',
+        'date_tarif',
     ];
 
     protected $casts = [
@@ -64,6 +66,7 @@ class Fourniture extends Model
         'prix_vente_ht' => 'decimal:4',
         'prix_vente_saisi' => 'boolean',
         'actif' => 'boolean',
+        'date_tarif' => 'date:Y-m-d',
     ];
 
     /**
