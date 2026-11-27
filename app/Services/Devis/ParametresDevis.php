@@ -317,6 +317,19 @@ class ParametresDevis
             'parametres' => $valeurs,
             'taux_horaires' => $taux,
             'effet_difficulte' => $this->effetDifficulte($devis),
+            // Lot F4c : lignes dont le niveau de prestation a été choisi à la main.
+            'lignes_niveau_choisi' => LigneDevis::query()
+                ->where('devis_id', $devis->getKey())
+                ->where('niveau_prestation_fixe', true)
+                ->orderBy('ordre')->orderBy('id')
+                ->get(['id', 'libelle', 'niveau_prestation'])
+                ->map(fn (LigneDevis $ligne): array => [
+                    'id' => (int) $ligne->id,
+                    'libelle' => (string) $ligne->libelle,
+                    'niveau_prestation' => (string) $ligne->niveau_prestation,
+                    'differe_du_devis' => (string) $ligne->niveau_prestation !== (string) $valeurs['niveau_prestation'],
+                ])
+                ->all(),
         ]);
     }
 

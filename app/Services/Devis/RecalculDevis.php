@@ -108,7 +108,7 @@ class RecalculDevis
      * @param Devis $devis
      * @param DevisParametres $parametres
      * @param bool $inclureForces
-     * @return array{lignes_recalculees: int, lignes_modifiees: int, lignes_prix_force_conservees: int, lignes_sans_sous_detail: int, fournitures_changees: int}
+     * @return array{lignes_recalculees: int, lignes_modifiees: int, lignes_prix_force_conservees: int, lignes_sans_sous_detail: int, fournitures_changees: int, lignes_niveau_choisi_conservees: int}
      */
     private function appliquer(Devis $devis, DevisParametres $parametres, bool $inclureForces): array
     {
@@ -153,6 +153,12 @@ class RecalculDevis
             'lignes_prix_force_conservees' => 0,
             'lignes_sans_sous_detail' => 0,
             'fournitures_changees' => 0,
+            'lignes_niveau_choisi_conservees' => $lignes->filter(
+                fn (LigneDevis $ligne): bool => $ligne->composants->isNotEmpty()
+                    && $ligne->niveau_prestation_fixe
+                    && $ligne->niveau_prestation !== null
+                    && (string) $ligne->niveau_prestation !== $niveauDevis
+            )->count(),
         ];
 
         foreach ($lignes as $ligne) {
@@ -262,6 +268,14 @@ class RecalculDevis
         $texte = $recalculees === 1 ? '1 ligne recalculée' : "{$recalculees} lignes recalculées";
         if ($conservees > 0) {
             $texte .= $conservees === 1 ? ', 1 ligne à prix forcé conservée' : ", {$conservees} lignes à prix forcé conservées";
+        }
+
+        // Lot F4c : les lignes dont le niveau a été choisi à la main ne suivent pas le niveau du devis.
+        $choisies = (int) ($compteurs['lignes_niveau_choisi_conservees'] ?? 0);
+        if ($choisies > 0) {
+            $texte .= $choisies === 1
+                ? ', 1 ligne garde son niveau choisi à la main'
+                : ", {$choisies} lignes gardent leur niveau choisi à la main";
         }
 
         return $texte . '.';

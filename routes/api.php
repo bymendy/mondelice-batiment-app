@@ -277,3 +277,8 @@ Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
 Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
     Route::put('imports-fournitures/{import}/lecture', [\App\Http\Controllers\ImportFournituresController::class, 'lecture'])->whereNumber('import');
 });
+
+// Tâche 3.6 bis, lot F4c : niveau de prestation d'une ligne de devis déjà écrite.
+Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
+    Route::put('lignes-devis/{ligne}/niveau-prestation', [\App\Http\Controllers\NiveauLigneDevisController::class, 'update'])->whereNumber('ligne');
+});
