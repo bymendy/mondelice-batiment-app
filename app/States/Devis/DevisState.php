@@ -8,10 +8,11 @@ use Spatie\ModelStates\StateConfig;
 /**
  * Machine à états du Devis (module Devis, tâche 3.6).
  *
- * 13 statuts en 3 macro-états :
+ * 14 statuts en 3 macro-états :
  *  - brouillon : En préparation, En attente de dérogation, Prêt à envoyer ;
  *  - envoyé : Envoyé, Délivré, Consulté, Relance 1, Relance 2, Négociation ;
- *  - décidé : Accepté, Refusé, Expiré, Annulé.
+ *  - décidé : Accepté, Refusé, Expiré, Annulé, Non retenue (version
+ *    remplacée ou écartée, posée par l'application : voir VersionsDevis).
  *
  * La colonne `statut` de la table `devis` garde le nom du statut
  * (`en_preparation`, `envoye`, `relance_1`...). Le modèle Devis ne la convertit
@@ -64,6 +65,12 @@ abstract class DevisState extends State
         foreach ([Accepte::class, Refuse::class, Expire::class, Annule::class] as $issue) {
             $config->allowTransition($apresEnvoi, $issue);
         }
+
+        // Version non retenue (lot « versions du devis ») : depuis tout statut encore ouvert, jamais à la main.
+        $config->allowTransition(
+            array_merge([EnPreparation::class, EnAttenteDerogation::class, PretAEnvoyer::class], $apresEnvoi),
+            NonRetenu::class
+        );
 
         return $config;
     }

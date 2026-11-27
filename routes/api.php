@@ -282,3 +282,8 @@ Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
 Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
     Route::put('lignes-devis/{ligne}/niveau-prestation', [\App\Http\Controllers\NiveauLigneDevisController::class, 'update'])->whereNumber('ligne');
 });
+
+// Module Devis, lot V1 : nouvelle version d'un devis.
+Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
+    Route::post('devis/{devis}/versions', [\App\Http\Controllers\VersionDevisController::class, 'store'])->whereNumber('devis');
+});

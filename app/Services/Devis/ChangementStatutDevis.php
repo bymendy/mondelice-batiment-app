@@ -92,6 +92,11 @@ class ChangementStatutDevis
                 ));
 
             $this->affaires->appliquer($devis, $vers, $auteur);
+
+            // Lot V1 : une version signée ferme les autres versions encore ouvertes.
+            if ($vers === 'accepte') {
+                app(VersionsDevis::class)->fermerAutres($devis, $auteur);
+            }
         });
 
         return $devis;

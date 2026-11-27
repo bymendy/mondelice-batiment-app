@@ -110,7 +110,7 @@ class DevisStatutTest extends TestCase
     {
         $this->assertSame(
             ['accepte', 'annule', 'consulte', 'delivre', 'en_attente_derogation', 'en_preparation', 'envoye', 'expire',
-                'negociation', 'pret_a_envoyer', 'refuse', 'relance_1', 'relance_2'],
+                'negociation', 'non_retenu', 'pret_a_envoyer', 'refuse', 'relance_1', 'relance_2'],
             DevisState::getStateMapping()->keys()->sort()->values()->all()
         );
 

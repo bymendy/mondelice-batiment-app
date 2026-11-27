@@ -40,7 +40,8 @@ class DevisController extends Controller implements HasMiddleware
     /**
      * Liste paginee.
      *
-     * Query params : client_id, opportunite_id, statut, auteur_id,
+     * Query params : client_id, opportunite_id, statut, auteur_id, groupe
+     * (identifiant d'une version : rend toutes les versions du même devis),
      * recherche (numero, titre, nom du client), par_page (defaut 25, max 100).
      *
      * @param Request $request
@@ -54,6 +55,13 @@ class DevisController extends Controller implements HasMiddleware
             if ($request->filled($champ)) {
                 $requete->where($champ, $request->integer($champ));
             }
+        }
+
+        // Lot V1 : toutes les versions d'un même devis, à partir de n'importe laquelle.
+        if ($request->filled('groupe')) {
+            $membre = $request->integer('groupe');
+            $racine = (int) (Devis::query()->whereKey($membre)->value('version_origine_id') ?? $membre);
+            $requete->where(fn (Builder $q) => $q->whereKey($racine)->orWhere('version_origine_id', $racine));
         }
 
         if ($request->filled('statut')) {
@@ -209,6 +217,7 @@ class DevisController extends Controller implements HasMiddleware
             ),
             'statut_libelle' => \App\Services\Devis\StatutsDevis::libelle((string) $devis->statut),
             'macro_etat' => \App\Services\Devis\StatutsDevis::macroEtat((string) $devis->statut),
-        ], \App\Services\Devis\MarcheDevis::pour($devis, request()->user()));
+        ], \App\Services\Devis\MarcheDevis::pour($devis, request()->user()),
+            \App\Services\Devis\VersionsDevis::pour($devis, request()->user()));
     }
 }

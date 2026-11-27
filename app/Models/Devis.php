@@ -23,12 +23,21 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  *
  * Avenants : `devis_parent_id` et `rang_avenant` (logique au lot D5).
  *
+ * Versions (lot V1) : `version_origine_id` (premier devis du groupe, vide
+ * pour lui) et `rang_version` (2, 3... ; vide pour le premier). Voir
+ * App\Services\Devis\VersionsDevis.
+ *
  * @property int $id
  * @property int $client_id
  * @property int|null $opportunite_id
  * @property int|null $adresse_chantier_id
  * @property int|null $devis_parent_id
  * @property int|null $rang_avenant
+ * @property int|null $version_origine_id
+ * @property int|null $rang_version
+ * @property string|null $non_retenu_motif remplace | autre_version_acceptee
+ * @property int|null $non_retenu_par_id
+ * @property \Illuminate\Support\Carbon|null $non_retenu_le
  * @property string|null $numero
  * @property string|null $titre
  * @property string $statut
@@ -77,6 +86,8 @@ class Devis extends Model
         'date_expiration' => 'date',
         'validite_jours' => 'integer',
         'rang_avenant' => 'integer',
+        'rang_version' => 'integer',
+        'non_retenu_le' => 'datetime',
         'total_ht' => 'decimal:2',
         'total_tva' => 'decimal:2',
         'total_ttc' => 'decimal:2',

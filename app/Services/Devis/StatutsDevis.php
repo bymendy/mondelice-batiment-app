@@ -16,7 +16,7 @@ class StatutsDevis
     public const ENVOYE = ['envoye', 'delivre', 'consulte', 'relance_1', 'relance_2', 'negociation'];
 
     /** @var list<string> */
-    public const DECIDE = ['accepte', 'refuse', 'expire', 'annule'];
+    public const DECIDE = ['accepte', 'refuse', 'expire', 'annule', 'non_retenu'];
 
     /**
      * Libellé du statut (« Relance 1 »...). Un statut inconnu est rendu tel quel.
