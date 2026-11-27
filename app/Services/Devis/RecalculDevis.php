@@ -108,7 +108,7 @@ class RecalculDevis
      * @param Devis $devis
      * @param DevisParametres $parametres
      * @param bool $inclureForces
-     * @return array{lignes_recalculees: int, lignes_modifiees: int, lignes_prix_force_conservees: int, lignes_sans_sous_detail: int}
+     * @return array{lignes_recalculees: int, lignes_modifiees: int, lignes_prix_force_conservees: int, lignes_sans_sous_detail: int, fournitures_changees: int}
      */
     private function appliquer(Devis $devis, DevisParametres $parametres, bool $inclureForces): array
     {
@@ -131,12 +131,28 @@ class RecalculDevis
         // Lot F2b : marge des fournitures du devis, pour les fournitures a prix calcule.
         $margeFournitures = $parametres->marge_fournitures;
         $fraisPct = (float) $parametres->frais_generaux_fournitures;
+        // Lot F4b : niveau de prestation du devis ; fournitures entre lesquelles une ligne peut changer.
+        $niveauDevis = (string) ($parametres->niveau_prestation ?: \App\Services\Bibliotheque\NiveauPrestation::STANDARD);
+        $idsFournitures = [];
+        foreach ($lignes as $ligne) {
+            foreach ($ligne->composants as $composant) {
+                foreach (['fourniture_standard_id', 'fourniture_eco_id', 'fourniture_haut_id'] as $colonne) {
+                    if ($composant->{$colonne} !== null) {
+                        $idsFournitures[(int) $composant->{$colonne}] = true;
+                    }
+                }
+            }
+        }
+        $fournitures = $idsFournitures === []
+            ? collect()
+            : \App\Models\Fourniture::withTrashed()->whereIn('id', array_keys($idsFournitures))->get()->keyBy('id');
 
         $compteurs = [
             'lignes_recalculees' => 0,
             'lignes_modifiees' => 0,
             'lignes_prix_force_conservees' => 0,
             'lignes_sans_sous_detail' => 0,
+            'fournitures_changees' => 0,
         ];
 
         foreach ($lignes as $ligne) {
@@ -154,8 +170,29 @@ class RecalculDevis
             $venteCts = 0;
             $revientCts = 0;
             $revientComplet = true;
+            // Lot F4b : une ligne dont le niveau a été choisi le garde ; les autres suivent le devis.
+            $niveauLigne = $ligne->niveau_prestation_fixe && $ligne->niveau_prestation !== null ? (string) $ligne->niveau_prestation : $niveauDevis;
+            $colonneNiveau = \App\Services\Bibliotheque\NiveauPrestation::COLONNES[$niveauLigne] ?? null;
 
             foreach ($ligne->composants as $composant) {
+                // La fourniture suit le niveau : variante si elle existe, sinon la standard. Un changement de
+                // gamme est un changement de produit : il prend le prix actuel de la Base de fournitures.
+                if ($composant->type === 'fourniture_base' && $composant->fourniture_standard_id !== null) {
+                    $voulue = (int) (($colonneNiveau !== null ? $composant->{$colonneNiveau} : null) ?? $composant->fourniture_standard_id);
+                    $produit = $voulue !== (int) $composant->fourniture_id ? $fournitures->get($voulue) : null;
+                    if ($produit !== null) {
+                        $composant->fill([
+                            'fourniture_id' => $voulue,
+                            'designation' => $produit->designation,
+                            'prix_achat_ht' => $produit->prix_achat_ht,
+                            'prix_vente_ht' => $produit->prix_vente_ht,
+                            'prix_vente_calcule' => ! $produit->prix_vente_saisi,
+                        ]);
+                        $composant->save();
+                        $compteurs['fournitures_changees']++;
+                    }
+                }
+
                 if ($composant->type === 'main_oeuvre') {
                     $code = $composant->qualification ?? ($codeParLibelle[(string) $composant->taux_horaire_libelle] ?? null);
                     $tauxHoraire = $code !== null ? ($taux[(string) $code] ?? null) : null;
@@ -201,6 +238,7 @@ class RecalculDevis
             $ligne->prix_unitaire_ht = Arrondi::euros($venteCts);
             $ligne->prix_revient_unitaire = $revientComplet ? Arrondi::euros($revientCts) : null;
             $ligne->prix_force = false;
+            $ligne->niveau_prestation = $niveauLigne;
 
             $compteurs['lignes_recalculees']++;
             if ($ligne->isDirty()) {

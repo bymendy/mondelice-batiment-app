@@ -21,6 +21,8 @@ class LigneDevisDepuisArticleRequest extends LigneDevisRequest
             'quantite' => $regles['quantite'],
             'lot_id' => $regles['lot_id'],
             'emplacement_id' => $regles['emplacement_id'],
+            // Lot F4b : niveau de prestation de cette ligne ; absent : celui du devis.
+            'niveau_prestation' => ['sometimes', 'nullable', 'string', \Illuminate\Validation\Rule::in(\App\Services\Bibliotheque\NiveauPrestation::NIVEAUX)],
         ];
     }
 }

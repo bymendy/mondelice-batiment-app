@@ -37,6 +37,7 @@ class DevisParametres extends Model
         'marge_fournitures',
         'marge_fournitures_source',
         'frais_generaux_fournitures',
+        'niveau_prestation',
     ];
 
     protected $casts = [

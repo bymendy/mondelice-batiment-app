@@ -82,6 +82,7 @@ class ParametresDevis
                     'marge_fournitures' => $origine->marge_fournitures,
                     'marge_fournitures_source' => $origine->marge_fournitures_source,
                     'frais_generaux_fournitures' => $origine->frais_generaux_fournitures,
+                    'niveau_prestation' => $origine->niveau_prestation ?: 'standard',
                 ]);
                 $lignes = DevisTauxHoraire::query()->where('devis_id', $devis->devis_parent_id)->orderBy('ordre')->orderBy('id')->get();
                 foreach ($lignes as $taux) {
@@ -108,6 +109,7 @@ class ParametresDevis
                 'tva_source' => 'entreprise',
                 'marge_fournitures' => Parametre::lire('marge_fournitures_defaut'),
                 'frais_generaux_fournitures' => (float) Parametre::lire('frais_generaux_fournitures'),
+                'niveau_prestation' => (string) (Parametre::lire('niveau_prestation_defaut') ?: 'standard'),
             ]);
             foreach (TauxHoraire::query()->orderBy('ordre')->orderBy('id')->get() as $taux) {
                 $this->copierTaux($devis, $taux);
@@ -214,6 +216,14 @@ class ParametresDevis
                     : 'modifie';
             }
 
+            // Lot F4b : niveau de prestation du devis.
+            if (array_key_exists('niveau_prestation', $donnees)
+                && (string) $donnees['niveau_prestation'] !== (string) $parametres->niveau_prestation) {
+                $avant['niveau_prestation'] = (string) $parametres->niveau_prestation;
+                $apres['niveau_prestation'] = (string) $donnees['niveau_prestation'];
+                $parametres->niveau_prestation = $apres['niveau_prestation'];
+            }
+
             $parametres->save();
 
             foreach ($donnees['taux_horaires'] ?? [] as $rang => $demande) {
@@ -274,6 +284,7 @@ class ParametresDevis
             'coefficient_zone' => (float) $parametres->coefficient_zone,
             'tva_defaut' => (float) $parametres->tva_defaut,
             'tva_source' => (string) $parametres->tva_source,
+            'niveau_prestation' => (string) ($parametres->niveau_prestation ?: 'standard'),
         ];
         if ($voitMarge) {
             $valeurs['marge_fournitures'] = $parametres->marge_fournitures === null ? null : (float) $parametres->marge_fournitures;

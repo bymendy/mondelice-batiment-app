@@ -10,6 +10,8 @@ use App\Models\Devis;
 use App\Models\LigneDevis;
 use App\Models\LigneDevisComposant;
 use App\Services\Bibliotheque\CalculPrixArticle;
+use App\Services\Bibliotheque\NiveauPrestation;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -28,6 +30,14 @@ use Illuminate\Validation\ValidationException;
  *
  * Le sous-detail garde le temps de base (`quantite_base`) et la qualification
  * de chaque ligne de main-d'oeuvre : c'est ce qui permettra de recalculer.
+ *
+ * Niveau de prestation (lot F4b) : la ligne est copiee au niveau du devis, ou
+ * a celui qu'on choisit pour elle. Chaque fourniture de la base qui a une
+ * variante pour ce niveau est remplacee par cette variante ; les autres
+ * gardent la fourniture standard. Le sous-detail de la ligne garde la
+ * fourniture standard et les deux variantes, pour pouvoir changer de niveau.
+ * Article a prix force : prix force + ecart de prix de vente des fournitures
+ * remplacees.
  */
 class CopieArticleDansDevis
 {
@@ -44,6 +54,7 @@ class CopieArticleDansDevis
      * @param float $quantite Quantite de la ligne (negative = deduction).
      * @param int|null $lotId Lot du devis, facultatif.
      * @param int|null $emplacementId Emplacement du devis, facultatif.
+     * @param string|null $niveau Niveau de prestation choisi pour cette ligne ; null : celui du devis.
      * @return LigneDevis La ligne creee, avec son sous-detail.
      *
      * @throws ValidationException Si le prix de l'article ne peut pas etre calcule.
@@ -53,13 +64,20 @@ class CopieArticleDansDevis
         ArticlePrix $article,
         float $quantite,
         ?int $lotId = null,
-        ?int $emplacementId = null
+        ?int $emplacementId = null,
+        ?string $niveau = null
     ): LigneDevis {
         $article->loadMissing('composants');
         $origines = $article->composants->values();
 
         $parametres = $this->parametres->pour($devis) ?? $this->parametres->creer($devis);
         $difficulte = (float) $parametres->coefficient_difficulte;
+
+        // Lot F4b : niveau de la ligne, puis sous-detail a ce niveau (meme ordre que l'article).
+        $niveauFixe = $niveau !== null;
+        $niveau ??= (string) ($parametres->niveau_prestation ?: NiveauPrestation::STANDARD);
+        $auNiveau = NiveauPrestation::composantsAuNiveau($origines, $niveau);
+        $sources = collect($auNiveau['composants'])->values();
 
         $codes = $origines
             ->filter(fn (ArticleComposant $composant): bool => $composant->type === TypeComposant::MainOeuvre)
@@ -70,28 +88,38 @@ class CopieArticleDansDevis
 
         // Sous-detail ajuste : la difficulte multiplie le temps de main-d'oeuvre.
         // Lot F2b : une fourniture de la base a prix CALCULE suit la marge et les frais generaux du devis.
-        $calculees = $this->fournituresAPrixCalcule($origines);
         $margeDevis = $parametres->marge_fournitures;
         $fraisDevis = (float) $parametres->frais_generaux_fournitures;
 
-        $ajustes = $origines->map(function (ArticleComposant $composant) use ($difficulte, $calculees, $margeDevis, $fraisDevis): ArticleComposant {
-            $copie = clone $composant;
-            if ($composant->type === TypeComposant::MainOeuvre) {
-                $copie->quantite = round((float) $composant->quantite * $difficulte, 4);
-            } elseif ($margeDevis !== null && $composant->prix_achat_ht !== null && isset($calculees[(int) $composant->fourniture_id])) {
-                $copie->prix_vente_ht = \App\Services\Bibliotheque\PrixVenteFourniture::calculer((float) $composant->prix_achat_ht, (float) $margeDevis, $fraisDevis);
-            }
+        $ajuster = function (Collection $composants) use ($difficulte, $margeDevis, $fraisDevis): array {
+            $calculees = $this->fournituresAPrixCalcule($composants);
+            $ajustes = $composants->map(function (ArticleComposant $composant) use ($difficulte, $calculees, $margeDevis, $fraisDevis): ArticleComposant {
+                $copie = clone $composant;
+                if ($composant->type === TypeComposant::MainOeuvre) {
+                    $copie->quantite = round((float) $composant->quantite * $difficulte, 4);
+                } elseif ($margeDevis !== null && $composant->prix_achat_ht !== null && isset($calculees[(int) $composant->fourniture_id])) {
+                    $copie->prix_vente_ht = \App\Services\Bibliotheque\PrixVenteFourniture::calculer((float) $composant->prix_achat_ht, (float) $margeDevis, $fraisDevis);
+                }
 
-            return $copie;
-        });
+                return $copie;
+            });
+
+            return [$ajustes, $calculees];
+        };
+        [$ajustes, $calculees] = $ajuster($sources);
 
         try {
-            $resultat = (new CalculPrixArticle())->calculer(
-                $ajustes,
-                $taux,
-                $article->prix_force_ht !== null ? (float) $article->prix_force_ht : null,
-                (float) $parametres->frais_generaux_fournitures
-            );
+            $calcul = new CalculPrixArticle();
+            $prixForce = $article->prix_force_ht !== null ? (float) $article->prix_force_ht : null;
+            $resultat = $calcul->calculer($ajustes, $taux, $prixForce, $fraisDevis);
+            $prixVente = $resultat->prixVenteHt;
+
+            // Lot F4b : le prix force vaut pour le niveau standard ; a un autre niveau, il suit l'ecart des fournitures.
+            if ($prixForce !== null && $auNiveau['remplacees'] !== []) {
+                [$ajustesStandard] = $ajuster($origines);
+                $standard = $calcul->calculer($ajustesStandard, $taux, null, $fraisDevis);
+                $prixVente = NiveauPrestation::prixAuNiveau($prixForce, $standard->prixVenteSousDetailHt, $resultat->prixVenteSousDetailHt);
+            }
         } catch (QualificationInconnueException $e) {
             throw ValidationException::withMessages(['article_prix_id' => $e->getMessage()]);
         }
@@ -99,7 +127,7 @@ class CopieArticleDansDevis
         // TVA : celle de l'article, sauf si la TVA du devis a ete reglee a la main.
         $tva = $parametres->tva_source === 'modifie' ? $parametres->tva_defaut : $article->taux_tva;
 
-        return DB::transaction(function () use ($devis, $article, $quantite, $lotId, $emplacementId, $resultat, $taux, $origines, $ajustes, $tva, $calculees): LigneDevis {
+        return DB::transaction(function () use ($devis, $article, $quantite, $lotId, $emplacementId, $resultat, $prixVente, $taux, $origines, $sources, $ajustes, $tva, $calculees, $niveau, $niveauFixe): LigneDevis {
             $ligne = LigneDevis::create([
                 'devis_id' => $devis->getKey(),
                 'lot_id' => $lotId,
@@ -111,14 +139,18 @@ class CopieArticleDansDevis
                 'dtu_reference' => $article->dtu_reference,
                 'quantite' => $quantite,
                 'unite' => $article->unite->value,
-                'prix_unitaire_ht' => $resultat->prixVenteHt,
+                'prix_unitaire_ht' => $prixVente,
                 'prix_revient_unitaire' => $resultat->revientComplet ? $resultat->prixRevientHt : null,
                 'prix_force' => $article->prix_force_ht !== null,
+                'niveau_prestation' => $niveau,
+                'niveau_prestation_fixe' => $niveauFixe,
                 'taux_tva' => $tva,
                 'ordre' => ((int) LigneDevis::query()->where('devis_id', $devis->getKey())->max('ordre')) + 1,
             ]);
 
-            foreach ($origines as $rang => $composant) {
+            foreach ($sources as $rang => $composant) {
+                // $composant : la ligne au niveau choisi ; $origine : la ligne de l'article (niveau standard).
+                $origine = $origines[$rang];
                 $estMainOeuvre = $composant->type === TypeComposant::MainOeuvre;
                 $tauxHoraire = $estMainOeuvre ? $taux[(string) $composant->qualification] : null;
 
@@ -130,6 +162,9 @@ class CopieArticleDansDevis
                     'quantite_base' => $estMainOeuvre ? $composant->quantite : null,
                     'qualification' => $estMainOeuvre ? (string) $composant->qualification : null,
                     'fourniture_id' => $composant->fourniture_id,
+                    'fourniture_standard_id' => $origine->fourniture_id,
+                    'fourniture_eco_id' => $origine->fourniture_eco_id,
+                    'fourniture_haut_id' => $origine->fourniture_haut_id,
                     'unite' => $composant->unite,
                     'prix_achat_ht' => $estMainOeuvre ? $tauxHoraire->cout_revient_ht : $composant->prix_achat_ht,
                     'prix_vente_ht' => $estMainOeuvre ? $tauxHoraire->taux_vente_ht : $ajustes[$rang]->prix_vente_ht,
@@ -149,10 +184,10 @@ class CopieArticleDansDevis
      * Fournitures de la base dont le prix de vente est calcule (pas saisi),
      * parmi celles que cite le sous-detail (lot F2b).
      *
-     * @param \Illuminate\Support\Collection<int, ArticleComposant> $composants
+     * @param Collection<int, ArticleComposant> $composants
      * @return array<int, true> Indexe par identifiant de fourniture.
      */
-    private function fournituresAPrixCalcule(\Illuminate\Support\Collection $composants): array
+    private function fournituresAPrixCalcule(Collection $composants): array
     {
         $ids = $composants->pluck('fourniture_id')->filter()->unique()->values()->all();
         if ($ids === []) {

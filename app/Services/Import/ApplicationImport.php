@@ -103,7 +103,8 @@ final class ApplicationImport
 
             $articles = [];
             foreach (array_chunk($modifiees, 500) as $paquet) {
-                $articles = array_merge($articles, ArticleComposant::query()->whereIn('fourniture_id', $paquet)
+                $articles = array_merge($articles, ArticleComposant::query()
+                    ->where(fn ($q) => $q->whereIn('fourniture_id', $paquet)->orWhereIn('fourniture_eco_id', $paquet)->orWhereIn('fourniture_haut_id', $paquet))
                     ->distinct()->pluck('article_id')->map(static fn ($id): int => (int) $id)->all());
             }
             $articles = array_values(array_unique($articles));

@@ -59,6 +59,11 @@ class Parametre extends Model
             'defaut' => 0,
             'regle' => 'numeric|min:0|max:100',
         ],
+        'niveau_prestation_defaut' => [
+            'libelle' => 'Niveau de prestation par défaut des nouveaux devis (économique, standard ou haut de gamme)',
+            'defaut' => 'standard',
+            'regle' => 'in:economique,standard,haut_de_gamme',
+        ],
         'marge_zone_orange_points' => [
             'libelle' => 'Indicateur de marge du devis : largeur de la zone orange au-dessus du seuil (en points de marge)',
             'defaut' => 5,

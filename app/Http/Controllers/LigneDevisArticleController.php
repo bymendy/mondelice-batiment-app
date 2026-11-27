@@ -60,7 +60,8 @@ class LigneDevisArticleController extends Controller implements HasMiddleware
                 $article,
                 (float) $request->input('quantite'),
                 $request->filled('lot_id') ? $request->integer('lot_id') : null,
-                $request->filled('emplacement_id') ? $request->integer('emplacement_id') : null
+                $request->filled('emplacement_id') ? $request->integer('emplacement_id') : null,
+                $request->filled('niveau_prestation') ? (string) $request->input('niveau_prestation') : null
             );
             $fiche->recalculerTotaux();
 

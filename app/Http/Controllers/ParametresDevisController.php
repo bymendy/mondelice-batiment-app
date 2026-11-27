@@ -79,6 +79,7 @@ class ParametresDevisController extends Controller implements HasMiddleware
             ],
             'tva_defaut' => ['sometimes', 'numeric', 'between:0,100'],
             'marge_fournitures' => ['sometimes', 'numeric', 'between:0,99.99'],
+            'niveau_prestation' => ['sometimes', 'string', \Illuminate\Validation\Rule::in(\App\Services\Bibliotheque\NiveauPrestation::NIVEAUX)],
             'taux_horaires' => ['sometimes', 'array', 'max:100'],
             'taux_horaires.*.code' => ['required', 'string', 'max:30'],
             'taux_horaires.*.taux_vente_ht' => ['required', 'numeric', 'between:0.01,9999.99'],
