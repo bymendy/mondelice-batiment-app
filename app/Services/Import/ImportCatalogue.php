@@ -19,8 +19,12 @@ use RuntimeException;
  * Import du catalogue d'un fournisseur (tâche 3.6 bis, lot F3a) : envoi du
  * fichier, proposition des colonnes, analyse et comparatif.
  *
- * Ce lot n'écrit RIEN dans la Base de fournitures : il prépare le comparatif
- * que le lot F3b appliquera après validation.
+ * Ce service n'écrit RIEN dans la Base de fournitures : il prépare le
+ * comparatif que le lot F3b applique après validation.
+ *
+ * Lot F3c : choix de la feuille Excel et de la ligne d'en-tête, numéros de
+ * lignes réels, nombres lus avec le séparateur décimal de leur colonne, et
+ * avertissements quand le fichier laisse un doute.
  */
 final class ImportCatalogue
 {
@@ -28,6 +32,12 @@ final class ImportCatalogue
     public const MAX_LIGNES = 5000;
 
     public const DISQUE = 'local';
+
+    /** Lignes du début du fichier montrées pour choisir la ligne d'en-tête. */
+    public const LIGNES_DEBUT = 10;
+
+    /** Champs numériques dont on déduit le format par colonne. */
+    private const CHAMPS_NOMBRES = ['prix_tarif_ht', 'prix_achat_ht', 'remise_pct', 'prix_vente_ht'];
 
     /**
      * @param LecteurTableur $lecteur
@@ -45,12 +55,21 @@ final class ImportCatalogue
      * @param string $mode `prix` ou `complet`.
      * @param string|null $dateTarif
      * @param User|null $auteur
+     * @param int $feuille Index de la feuille Excel (0 pour la première).
+     * @param int $ligneEntete Numéro, dans le fichier, de la ligne d'en-tête.
      * @return ImportFournitures
      *
      * @throws ValidationException Si le fichier est illisible, vide ou trop long.
      */
-    public function envoyer(UploadedFile $fichier, Fournisseur $fournisseur, string $mode, ?string $dateTarif, ?User $auteur): ImportFournitures
-    {
+    public function envoyer(
+        UploadedFile $fichier,
+        Fournisseur $fournisseur,
+        string $mode,
+        ?string $dateTarif,
+        ?User $auteur,
+        int $feuille = 0,
+        int $ligneEntete = 1
+    ): ImportFournitures {
         $format = self::format($fichier->getClientOriginalName());
         if ($format === null) {
             throw ValidationException::withMessages(['fichier' => 'Le fichier doit être un CSV ou un Excel (.xlsx).']);
@@ -63,14 +82,15 @@ final class ImportCatalogue
         );
 
         try {
-            $lignes = $this->lire((string) $chemin, $format);
+            $lecture = $this->lire((string) $chemin, $format, $feuille, $ligneEntete);
         } catch (ValidationException $e) {
             Storage::disk(self::DISQUE)->delete((string) $chemin);
 
             throw $e;
         }
 
-        $entetes = array_shift($lignes);
+        $entetes = $lecture['entetes'];
+        $lignes = $lecture['lignes'];
         $proposee = $this->correspondanceProposee($fournisseur, $entetes);
 
         return ImportFournitures::create([
@@ -86,7 +106,50 @@ final class ImportCatalogue
             'entetes' => $entetes,
             'apercu' => array_slice($lignes, 0, 5),
             'correspondance_proposee' => $proposee,
+            'feuilles' => $lecture['feuilles'],
+            'feuille' => $feuille,
+            'ligne_entete' => $ligneEntete,
+            'debut_fichier' => $lecture['debut'],
         ]);
+    }
+
+    /**
+     * Relit le fichier avec une autre feuille ou une autre ligne d'en-tête.
+     * L'import revient à l'étape des colonnes : le comparatif d'une analyse
+     * précédente est supprimé.
+     *
+     * @param ImportFournitures $import
+     * @param int $feuille
+     * @param int $ligneEntete
+     * @return ImportFournitures
+     *
+     * @throws ValidationException Si la feuille ou la ligne ne convient pas.
+     */
+    public function relire(ImportFournitures $import, int $feuille, int $ligneEntete): ImportFournitures
+    {
+        $lecture = $this->lire($import->chemin, $import->format, $feuille, $ligneEntete);
+        $fournisseur = Fournisseur::withTrashed()->findOrFail($import->fournisseur_id);
+        $proposee = $this->correspondanceProposee($fournisseur, $lecture['entetes']);
+
+        DB::transaction(function () use ($import, $lecture, $proposee, $feuille, $ligneEntete): void {
+            ImportFournituresLigne::query()->where('import_id', $import->getKey())->delete();
+            $import->update([
+                'statut' => 'envoye',
+                'nb_lignes' => count($lecture['lignes']),
+                'entetes' => $lecture['entetes'],
+                'apercu' => array_slice($lecture['lignes'], 0, 5),
+                'correspondance_proposee' => $proposee,
+                'correspondance' => null,
+                'resume' => null,
+                'avertissements' => null,
+                'feuilles' => $lecture['feuilles'],
+                'feuille' => $feuille,
+                'ligne_entete' => $ligneEntete,
+                'debut_fichier' => $lecture['debut'],
+            ]);
+        });
+
+        return $import->refresh();
     }
 
     /**
@@ -100,8 +163,36 @@ final class ImportCatalogue
      */
     public function analyser(ImportFournitures $import, array $correspondance, string $uniteDefaut): ImportFournitures
     {
-        $lignes = $this->lire($import->chemin, $import->format);
-        array_shift($lignes);
+        $lecture = $this->lire($import->chemin, $import->format, (int) $import->feuille, (int) $import->ligne_entete);
+        $lignes = $lecture['lignes'];
+        // Dans un fichier Excel, un nombre est enregistré avec un point décimal, sans séparateur de milliers.
+        $pointSur = $import->format === 'xlsx';
+
+        $conventions = [];
+        $avertissements = [];
+        foreach (self::CHAMPS_NOMBRES as $champ) {
+            $colonne = $correspondance[$champ] ?? null;
+            if ($colonne === null) {
+                continue;
+            }
+            $convention = NormalisationImport::convention(array_column($lignes, $colonne), $pointSur);
+            $conventions[$champ] = $convention;
+            $entete = $lecture['entetes'][$colonne] ?? ('colonne ' . ($colonne + 1));
+            if ($convention['etat'] === 'ambigu') {
+                $avertissements[] = sprintf(
+                    'Colonne « %s » : le format des nombres est équivoque (« %s » est lu %s, et non comme un millier). '
+                    . 'Les lignes concernées attendent votre validation : vérifiez-les avant d\'appliquer.',
+                    $entete,
+                    $convention['exemple'],
+                    str_replace('.', ',', (string) NormalisationImport::nombre($convention['exemple'], null, $pointSur))
+                );
+            } elseif ($convention['etat'] === 'melange') {
+                $avertissements[] = sprintf(
+                    'Colonne « %s » : les nombres mélangent deux formats (virgule décimale et point décimal). Vérifiez le comparatif avant d\'appliquer.',
+                    $entete
+                );
+            }
+        }
 
         $existantes = [];
         foreach (Fourniture::query()->where('fournisseur_id', $import->fournisseur_id)->whereNotNull('reference')->get() as $fourniture) {
@@ -117,10 +208,21 @@ final class ImportCatalogue
         }
 
         $seuil = (float) Parametre::lire('import_ecart_prix_pct');
-        $analyse = $this->analyse->analyser($lignes, $correspondance, $import->mode, $existantes, $seuil, $uniteDefaut);
+        $analyse = $this->analyse->analyser(
+            $lignes,
+            $correspondance,
+            $import->mode,
+            $existantes,
+            $seuil,
+            $uniteDefaut,
+            (int) $import->ligne_entete + 1,
+            $lecture['numeros'],
+            $conventions,
+            $pointSur
+        );
         $resume = $this->analyse->resumer($analyse);
 
-        DB::transaction(function () use ($import, $analyse, $resume, $correspondance, $uniteDefaut, $seuil): void {
+        DB::transaction(function () use ($import, $analyse, $resume, $correspondance, $uniteDefaut, $seuil, $avertissements): void {
             ImportFournituresLigne::query()->where('import_id', $import->getKey())->delete();
 
             $maintenant = now();
@@ -145,6 +247,7 @@ final class ImportCatalogue
                 'unite_defaut' => $uniteDefaut,
                 'seuil_ecart_pct' => $seuil,
                 'resume' => $resume,
+                'avertissements' => $avertissements === [] ? null : $avertissements,
             ]);
         });
 
@@ -180,18 +283,33 @@ final class ImportCatalogue
     }
 
     /**
-     * Lit le fichier : en-tête puis lignes de données.
+     * Lit le fichier : feuilles, début du fichier, en-tête, lignes de données
+     * et numéro réel de chaque ligne.
      *
      * @param string $chemin
      * @param string $format
-     * @return array<int, array<int, string>>
+     * @param int $feuille Index de la feuille Excel.
+     * @param int $ligneEntete Numéro de la ligne d'en-tête dans le fichier.
+     * @return array{feuilles: array<int, string>, debut: array<int, array{numero: int, cellules: array<int, string>}>, entetes: array<int, string>, lignes: array<int, array<int, string>>, numeros: array<int, int>}
      *
      * @throws ValidationException
      */
-    private function lire(string $chemin, string $format): array
+    private function lire(string $chemin, string $format, int $feuille = 0, int $ligneEntete = 1): array
     {
+        $fichier = Storage::disk(self::DISQUE)->path($chemin);
+
         try {
-            $lecture = $this->lecteur->lire(Storage::disk(self::DISQUE)->path($chemin), $format, self::MAX_LIGNES + 1);
+            $feuilles = $this->lecteur->feuilles($fichier, $format);
+        } catch (RuntimeException $e) {
+            throw ValidationException::withMessages(['fichier' => $e->getMessage()]);
+        }
+        if ($feuille !== 0 && ! isset($feuilles[$feuille])) {
+            throw ValidationException::withMessages(['feuille' => 'Cette feuille n\'existe pas dans le fichier.']);
+        }
+
+        try {
+            $debut = $this->lecteur->lire($fichier, $format, self::LIGNES_DEBUT, $feuille);
+            $lecture = $this->lecteur->lire($fichier, $format, self::MAX_LIGNES + 1, $feuille, $ligneEntete);
         } catch (RuntimeException $e) {
             throw ValidationException::withMessages(['fichier' => $e->getMessage()]);
         }
@@ -201,13 +319,28 @@ final class ImportCatalogue
                 'fichier' => sprintf('Le fichier dépasse %d lignes : découpez-le en plusieurs fichiers.', self::MAX_LIGNES),
             ]);
         }
+        if ($ligneEntete > 1 && ($lecture['numeros'][0] ?? null) !== $ligneEntete) {
+            throw ValidationException::withMessages([
+                'ligne_entete' => sprintf('La ligne %d est vide ou absente : choisissez la ligne qui porte les noms des colonnes.', $ligneEntete),
+            ]);
+        }
         if (count($lecture['lignes']) < 2) {
             throw ValidationException::withMessages([
                 'fichier' => 'Le fichier doit contenir une ligne d\'en-tête et au moins une ligne de données.',
             ]);
         }
 
-        return $lecture['lignes'];
+        $lignes = $lecture['lignes'];
+        $numeros = $lecture['numeros'];
+        $entetes = array_shift($lignes);
+        array_shift($numeros);
+
+        $premieres = [];
+        foreach ($debut['lignes'] as $rang => $cellules) {
+            $premieres[] = ['numero' => $debut['numeros'][$rang], 'cellules' => $cellules];
+        }
+
+        return ['feuilles' => $feuilles, 'debut' => $premieres, 'entetes' => $entetes, 'lignes' => $lignes, 'numeros' => $numeros];
     }
 
     /**

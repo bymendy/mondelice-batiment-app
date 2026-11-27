@@ -60,6 +60,11 @@ class ImportFournitures extends Model
         'applique_le',
         'applique_par',
         'bilan',
+        'feuilles',
+        'feuille',
+        'ligne_entete',
+        'debut_fichier',
+        'avertissements',
     ];
 
     protected $casts = [
@@ -73,6 +78,11 @@ class ImportFournitures extends Model
         'resume' => 'array',
         'applique_le' => 'datetime',
         'bilan' => 'array',
+        'feuilles' => 'array',
+        'feuille' => 'integer',
+        'ligne_entete' => 'integer',
+        'debut_fichier' => 'array',
+        'avertissements' => 'array',
     ];
 
     /**

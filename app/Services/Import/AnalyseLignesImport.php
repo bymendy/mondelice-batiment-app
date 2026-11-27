@@ -15,7 +15,9 @@ namespace App\Services\Import;
  *    désignation et l'unité se mettent à jour ;
  *  - un écart de prix au-delà du seuil est « à valider » : la ligne n'est
  *    pas retenue d'office ;
- *  - une cellule vide ne remplace jamais une valeur existante.
+ *  - une cellule vide ne remplace jamais une valeur existante ;
+ *  - les nombres se lisent avec le séparateur décimal de leur colonne ; si
+ *    la colonne est équivoque (« 1,234 »), la ligne est « à valider » (F3c).
  *
  * Classe sans accès à la base : elle reçoit les fournitures existantes.
  */
@@ -31,7 +33,11 @@ final class AnalyseLignesImport
      *        (id, designation, unite, prix_tarif_ht, prix_achat_ht, remise_pct, prix_vente_ht, prix_vente_saisi).
      * @param float $seuilEcartPct Écart de prix au-delà duquel la ligne est à valider.
      * @param string $uniteDefaut Unité d'une fourniture créée quand le fichier n'en donne pas.
-     * @param int $premiereLigne Numéro, dans le fichier, de la première ligne de données.
+     * @param int $premiereLigne Numéro, dans le fichier, de la première ligne de données (sans `$numeros`).
+     * @param array<int, int> $numeros Numéro réel de chaque ligne dans le fichier (lot F3c).
+     * @param array<string, array{decimale: string|null, etat: string}> $conventions Format des nombres
+     *        de chaque colonne numérique, par champ (NormalisationImport::convention()).
+     * @param bool $pointSur Un point seul est toujours décimal (fichier Excel).
      * @return array<int, array<string, mixed>> Une entrée par ligne.
      */
     public function analyser(
@@ -41,14 +47,17 @@ final class AnalyseLignesImport
         array $existantes,
         float $seuilEcartPct,
         string $uniteDefaut = 'u',
-        int $premiereLigne = 2
+        int $premiereLigne = 2,
+        array $numeros = [],
+        array $conventions = [],
+        bool $pointSur = false
     ): array {
         $champPrix = ($correspondance['prix_tarif_ht'] ?? null) !== null ? 'prix_tarif_ht' : 'prix_achat_ht';
         $vues = [];
         $resultat = [];
 
         foreach ($lignes as $rang => $cellules) {
-            $numero = $premiereLigne + $rang;
+            $numero = $numeros[$rang] ?? $premiereLigne + $rang;
             $lu = [];
             foreach (self::CHAMPS as $champ) {
                 $colonne = $correspondance[$champ] ?? null;
@@ -67,15 +76,23 @@ final class AnalyseLignesImport
                 $vues[$reference] = $numero;
             }
 
-            $prix = NormalisationImport::nombre($lu[$champPrix]);
+            $decimalePrix = $conventions[$champPrix]['decimale'] ?? null;
+            $prix = NormalisationImport::nombre($lu[$champPrix], $decimalePrix, $pointSur);
+            // Colonne au format équivoque (« 1,234 ») : la ligne attend une validation.
+            $prixEquivoque = ($conventions[$champPrix]['etat'] ?? 'sur') !== 'sur'
+                && NormalisationImport::estEquivoque($lu[$champPrix], $pointSur);
             if ($prix === null) {
                 $erreurs[] = ($lu[$champPrix] ?? '') === '' ? 'Prix manquant.' : sprintf('Prix illisible : « %s ».', $lu[$champPrix]);
             } elseif ($prix < 0) {
                 $erreurs[] = 'Prix négatif.';
             }
 
-            $remise = $this->facultatif($lu['remise_pct'], 'Remise', 0, 100, $erreurs);
-            $vente = $this->facultatif($lu['prix_vente_ht'], 'Prix de vente', 0, null, $erreurs);
+            $remise = $this->facultatif($lu['remise_pct'], 'Remise', 0, 100, $erreurs, $conventions['remise_pct']['decimale'] ?? null, $pointSur);
+            $vente = $this->facultatif($lu['prix_vente_ht'], 'Prix de vente', 0, null, $erreurs, $conventions['prix_vente_ht']['decimale'] ?? null, $pointSur);
+            if ($vente !== null && ($conventions['prix_vente_ht']['etat'] ?? 'sur') !== 'sur'
+                && NormalisationImport::estEquivoque($lu['prix_vente_ht'], $pointSur)) {
+                $prixEquivoque = true;
+            }
 
             $designation = ($lu['designation'] ?? '') !== '' ? (string) $lu['designation'] : null;
             if ($designation !== null && mb_strlen($designation) > 255) {
@@ -124,7 +141,9 @@ final class AnalyseLignesImport
                 } else {
                     $ligne['action'] = 'creer';
                     $ligne['unite'] = $unite ?? $uniteDefaut;
-                    $ligne['retenue'] = true;
+                    // Sans ancien prix, l'écart ne protège pas : un nombre équivoque attend une validation.
+                    $ligne['a_valider'] = $prixEquivoque;
+                    $ligne['retenue'] = ! $prixEquivoque;
                 }
                 $resultat[] = $ligne;
 
@@ -172,7 +191,8 @@ final class AnalyseLignesImport
             } else {
                 $ligne['action'] = 'modifier';
                 $ligne['modifications'] = $modifications;
-                $ligne['a_valider'] = $ligne['ecart_pct'] !== null && abs($ligne['ecart_pct']) > $seuilEcartPct;
+                $ligne['a_valider'] = ($ligne['ecart_pct'] !== null && abs($ligne['ecart_pct']) > $seuilEcartPct)
+                    || ($prixEquivoque && array_intersect($modifications, ['prix_tarif_ht', 'prix_achat_ht', 'prix_vente_ht']) !== []);
                 $ligne['retenue'] = ! $ligne['a_valider'];
             }
             $resultat[] = $ligne;
@@ -213,14 +233,16 @@ final class AnalyseLignesImport
      * @param float $min
      * @param float|null $max
      * @param array<int, string> $erreurs
+     * @param string|null $decimale Séparateur décimal de la colonne, s'il est connu.
+     * @param bool $pointSur
      * @return float|null
      */
-    private function facultatif(?string $texte, string $nom, float $min, ?float $max, array &$erreurs): ?float
+    private function facultatif(?string $texte, string $nom, float $min, ?float $max, array &$erreurs, ?string $decimale = null, bool $pointSur = false): ?float
     {
         if ($texte === null || $texte === '') {
             return null;
         }
-        $nombre = NormalisationImport::nombre($texte);
+        $nombre = NormalisationImport::nombre($texte, $decimale, $pointSur);
         if ($nombre === null) {
             $erreurs[] = sprintf('%s illisible : « %s ».', $nom, $texte);
 

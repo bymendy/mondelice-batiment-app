@@ -65,7 +65,9 @@ class ImportFournituresController extends Controller implements HasMiddleware
     /**
      * Envoi du fichier (formulaire multipart) : `fichier` (CSV ou .xlsx,
      * 5 Mo et 5 000 lignes au plus), `fournisseur_id`, `mode` (`prix` ou
-     * `complet`), `date_tarif` facultative.
+     * `complet`), `date_tarif` facultative. Lot F3c : `feuille` (index de la
+     * feuille Excel, 0 par défaut) et `ligne_entete` (numéro de la ligne qui
+     * porte les noms des colonnes, 1 par défaut).
      *
      * @param Request $request
      * @return JsonResponse
@@ -77,6 +79,8 @@ class ImportFournituresController extends Controller implements HasMiddleware
             'fournisseur_id' => ['required', 'integer'],
             'mode' => ['required', Rule::in(['prix', 'complet'])],
             'date_tarif' => ['nullable', 'date'],
+            'feuille' => ['nullable', 'integer', 'min:0', 'max:200'],
+            'ligne_entete' => ['nullable', 'integer', 'min:1', 'max:1000'],
         ]);
 
         $fournisseur = Fournisseur::query()->find((int) $donnees['fournisseur_id']);
@@ -89,7 +93,9 @@ class ImportFournituresController extends Controller implements HasMiddleware
             $fournisseur,
             $donnees['mode'],
             $donnees['date_tarif'] ?? null,
-            $request->user()
+            $request->user(),
+            (int) ($donnees['feuille'] ?? 0),
+            (int) ($donnees['ligne_entete'] ?? 1)
         );
 
         activity()->performedOn($import)->causedBy($request->user())->event('import_fournitures_envoye')
@@ -106,6 +112,38 @@ class ImportFournituresController extends Controller implements HasMiddleware
     public function show(int $import): JsonResponse
     {
         return response()->json($this->presenter(ImportFournitures::query()->with('fournisseur')->findOrFail($import), true));
+    }
+
+    /**
+     * Relit le fichier avec une autre feuille ou une autre ligne d'en-tête
+     * (lot F3c) : `feuille`, `ligne_entete`. Un champ absent garde sa valeur.
+     * L'import revient à l'étape des colonnes.
+     *
+     * @param Request $request
+     * @param int $import
+     * @return JsonResponse
+     */
+    public function lecture(Request $request, int $import): JsonResponse
+    {
+        $fiche = ImportFournitures::query()->with('fournisseur')->findOrFail($import);
+        if (! in_array($fiche->statut, ['envoye', 'analyse'], true)) {
+            throw ValidationException::withMessages(['import' => 'Cet import est terminé ou annulé : envoyez le fichier à nouveau.']);
+        }
+
+        $donnees = $request->validate([
+            'feuille' => ['sometimes', 'required', 'integer', 'min:0', 'max:200'],
+            'ligne_entete' => ['sometimes', 'required', 'integer', 'min:1', 'max:1000'],
+        ]);
+        $feuille = (int) ($donnees['feuille'] ?? $fiche->feuille);
+        $ligneEntete = (int) ($donnees['ligne_entete'] ?? $fiche->ligne_entete);
+
+        $fiche = $this->service->relire($fiche, $feuille, $ligneEntete);
+
+        activity()->performedOn($fiche)->causedBy($request->user())->event('import_fournitures_relu')
+            ->withProperties(['feuille' => $feuille, 'ligne_entete' => $ligneEntete, 'lignes' => $fiche->nb_lignes])
+            ->log(sprintf('Catalogue « %s » relu (feuille %d, en-tête à la ligne %d).', $fiche->nom_fichier, $feuille + 1, $ligneEntete));
+
+        return response()->json($this->presenter($fiche->load('fournisseur'), true));
     }
 
     /**
@@ -219,6 +257,29 @@ class ImportFournituresController extends Controller implements HasMiddleware
     }
 
     /**
+     * Avertissements de l'import : feuilles non lues, puis formats de nombres
+     * relevés par l'analyse.
+     *
+     * @param ImportFournitures $import
+     * @return array<int, string>
+     */
+    private function avertissements(ImportFournitures $import): array
+    {
+        $avertissements = [];
+        $feuilles = $import->feuilles ?? [];
+
+        if (count($feuilles) > 1) {
+            $avertissements[] = sprintf(
+                'Ce fichier contient %d feuilles : seule « %s » est lue. Pour les autres, choisissez une autre feuille ou envoyez le fichier à nouveau.',
+                count($feuilles),
+                $feuilles[(int) $import->feuille] ?? $feuilles[0]
+            );
+        }
+
+        return array_merge($avertissements, $import->avertissements ?? []);
+    }
+
+    /**
      * @param ImportFournitures $import
      * @param bool $detail Avec l'en-tête, l'aperçu et les colonnes.
      * @return array<string, mixed>
@@ -251,6 +312,11 @@ class ImportFournituresController extends Controller implements HasMiddleware
                 'unite_defaut' => $import->unite_defaut,
                 'seuil_ecart_pct' => $import->seuil_ecart_pct !== null ? (float) $import->seuil_ecart_pct : null,
                 'limite_lignes' => ImportCatalogue::MAX_LIGNES,
+                'feuilles' => $import->feuilles ?? [],
+                'feuille' => (int) $import->feuille,
+                'ligne_entete' => (int) $import->ligne_entete,
+                'debut_fichier' => $import->debut_fichier ?? [],
+                'avertissements' => $this->avertissements($import),
             ];
         }
 

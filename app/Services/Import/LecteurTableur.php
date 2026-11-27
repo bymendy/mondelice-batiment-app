@@ -11,8 +11,12 @@ use ZipArchive;
  *
  * Aucune bibliothèque externe : le CSV se lit avec les fonctions de PHP, le
  * fichier Excel est une archive ZIP de fichiers XML lue en flux (ZipArchive
- * et XMLReader). Seule la première feuille est lue. Les formules ne sont pas
- * recalculées : on lit la dernière valeur enregistrée par le tableur.
+ * et XMLReader). Une seule feuille est lue : la première par défaut, ou
+ * celle qu'on choisit (lot F3c). Les formules ne sont pas recalculées : on
+ * lit la dernière valeur enregistrée par le tableur.
+ *
+ * Chaque ligne garde son numéro réel dans le fichier (les lignes vides sont
+ * sautées mais comptées), pour que les messages désignent la bonne ligne.
  *
  * Le lecteur s'arrête dès que la limite de lignes est dépassée : il ne charge
  * jamais un fichier entier en mémoire au-delà de cette limite.
@@ -25,17 +29,48 @@ final class LecteurTableur
      * @param string $chemin Chemin du fichier sur le disque.
      * @param string $format `csv` ou `xlsx`.
      * @param int $maxLignes Nombre maximum de lignes lues (les lignes vides ne comptent pas).
-     * @return array{lignes: array<int, array<int, string>>, tronque: bool} Lignes non vides, dans l'ordre.
+     * @param int $feuille Index de la feuille (0 pour la première ; sans effet pour un CSV).
+     * @param int $aPartirDe Numéro de la première ligne à lire (1 pour le début du fichier).
+     * @return array{lignes: array<int, array<int, string>>, numeros: array<int, int>, tronque: bool}
+     *         Lignes non vides, dans l'ordre, et leur numéro dans le fichier.
+     *
+     * @throws RuntimeException Si le fichier est illisible ou si la feuille n'existe pas.
+     */
+    public function lire(string $chemin, string $format, int $maxLignes, int $feuille = 0, int $aPartirDe = 1): array
+    {
+        return match ($format) {
+            'csv' => $this->lireCsv($chemin, $maxLignes, $aPartirDe),
+            'xlsx' => $this->lireXlsx($chemin, $maxLignes, $feuille, $aPartirDe),
+            default => throw new RuntimeException('Format de fichier non pris en charge.'),
+        };
+    }
+
+    /**
+     * Noms des feuilles d'un fichier Excel, dans l'ordre du classeur. Un CSV
+     * n'a pas de feuille : la liste est vide.
+     *
+     * @param string $chemin
+     * @param string $format
+     * @return array<int, string>
      *
      * @throws RuntimeException Si le fichier est illisible.
      */
-    public function lire(string $chemin, string $format, int $maxLignes): array
+    public function feuilles(string $chemin, string $format): array
     {
-        return match ($format) {
-            'csv' => $this->lireCsv($chemin, $maxLignes),
-            'xlsx' => $this->lireXlsx($chemin, $maxLignes),
-            default => throw new RuntimeException('Format de fichier non pris en charge.'),
-        };
+        if ($format !== 'xlsx') {
+            return [];
+        }
+
+        $zip = new ZipArchive();
+        if ($zip->open($chemin, ZipArchive::RDONLY) !== true) {
+            throw new RuntimeException('Le fichier Excel est illisible.');
+        }
+
+        try {
+            return array_column($this->listeFeuilles($zip), 'nom');
+        } finally {
+            $zip->close();
+        }
     }
 
     /**
@@ -44,9 +79,10 @@ final class LecteurTableur
      *
      * @param string $chemin
      * @param int $maxLignes
-     * @return array{lignes: array<int, array<int, string>>, tronque: bool}
+     * @param int $aPartirDe
+     * @return array{lignes: array<int, array<int, string>>, numeros: array<int, int>, tronque: bool}
      */
-    private function lireCsv(string $chemin, int $maxLignes): array
+    private function lireCsv(string $chemin, int $maxLignes, int $aPartirDe): array
     {
         $contenu = @file_get_contents($chemin);
         if ($contenu === false) {
@@ -65,8 +101,14 @@ final class LecteurTableur
         rewind($flux);
 
         $lignes = [];
+        $numeros = [];
         $tronque = false;
+        $numero = 0;
         while (($champs = fgetcsv($flux, null, $separateur, '"', '')) !== false) {
+            $numero++;
+            if ($numero < $aPartirDe) {
+                continue;
+            }
             $ligne = $this->nettoyer(array_map(static fn ($v): string => (string) $v, $champs));
             if ($ligne === []) {
                 continue;
@@ -76,23 +118,27 @@ final class LecteurTableur
                 break;
             }
             $lignes[] = $ligne;
+            $numeros[] = $numero;
         }
         fclose($flux);
 
-        return ['lignes' => $lignes, 'tronque' => $tronque];
+        return ['lignes' => $lignes, 'numeros' => $numeros, 'tronque' => $tronque];
     }
 
     /**
+     * Séparateur le plus fréquent dans les vingt premières lignes : un titre
+     * au-dessus de l'en-tête ne trompe pas la détection (lot F3c).
+     *
      * @param string $contenu
      * @return string
      */
     private function separateur(string $contenu): string
     {
-        $premiere = strtok($contenu, "\r\n") ?: '';
+        $debut = implode("\n", array_slice(preg_split('/\R/', substr($contenu, 0, 20000)) ?: [], 0, 20));
         $meilleur = ';';
         $max = 0;
         foreach ([';', ',', "\t", '|'] as $candidat) {
-            $n = substr_count($premiere, $candidat);
+            $n = substr_count($debut, $candidat);
             if ($n > $max) {
                 $max = $n;
                 $meilleur = $candidat;
@@ -105,9 +151,11 @@ final class LecteurTableur
     /**
      * @param string $chemin
      * @param int $maxLignes
-     * @return array{lignes: array<int, array<int, string>>, tronque: bool}
+     * @param int $feuille
+     * @param int $aPartirDe
+     * @return array{lignes: array<int, array<int, string>>, numeros: array<int, int>, tronque: bool}
      */
-    private function lireXlsx(string $chemin, int $maxLignes): array
+    private function lireXlsx(string $chemin, int $maxLignes, int $feuille, int $aPartirDe): array
     {
         $zip = new ZipArchive();
         if ($zip->open($chemin, ZipArchive::RDONLY) !== true) {
@@ -115,37 +163,79 @@ final class LecteurTableur
         }
 
         try {
-            $feuille = $this->premiereFeuille($zip);
-            if ($feuille === null) {
+            $feuilles = $this->listeFeuilles($zip);
+            if ($feuilles === []) {
                 throw new RuntimeException('Le fichier Excel ne contient aucune feuille.');
+            }
+            if (! isset($feuilles[$feuille])) {
+                throw new RuntimeException('Cette feuille n\'existe pas dans le fichier Excel.');
             }
             $textes = $this->textesPartages($zip);
 
-            return $this->lireFeuille($zip, $feuille, $textes, $maxLignes);
+            return $this->lireFeuille($zip, $feuilles[$feuille]['fichier'], $textes, $maxLignes, $aPartirDe);
         } finally {
             $zip->close();
         }
     }
 
     /**
+     * Feuilles du classeur, dans l'ordre où le tableur les affiche (nom et
+     * fichier dans l'archive). Sans description du classeur, on se rabat sur
+     * les fichiers sheetN.xml, nommés « Feuille N ».
+     *
      * @param ZipArchive $zip
-     * @return string|null Nom du fichier de la première feuille dans l'archive.
+     * @return array<int, array{nom: string, fichier: string}>
      */
-    private function premiereFeuille(ZipArchive $zip): ?string
+    private function listeFeuilles(ZipArchive $zip): array
     {
         $feuilles = [];
+
+        if ($zip->locateName('xl/workbook.xml') !== false && $zip->locateName('xl/_rels/workbook.xml.rels') !== false) {
+            $cibles = [];
+            $liens = $this->ouvrir($zip, 'xl/_rels/workbook.xml.rels');
+            while ($liens->read()) {
+                if ($liens->nodeType === XMLReader::ELEMENT && $liens->localName === 'Relationship') {
+                    $cible = (string) $liens->getAttribute('Target');
+                    $cibles[(string) $liens->getAttribute('Id')] = str_starts_with($cible, '/') ? ltrim($cible, '/') : 'xl/' . $cible;
+                }
+            }
+            $liens->close();
+
+            $classeur = $this->ouvrir($zip, 'xl/workbook.xml');
+            while ($classeur->read()) {
+                if ($classeur->nodeType !== XMLReader::ELEMENT || $classeur->localName !== 'sheet') {
+                    continue;
+                }
+                $id = (string) $classeur->getAttribute('r:id');
+                if ($id === '') {
+                    $id = (string) $classeur->getAttributeNs('id', 'http://schemas.openxmlformats.org/officeDocument/2006/relationships');
+                }
+                $fichier = $cibles[$id] ?? null;
+                // Une feuille de graphique n'a pas de lignes : on ne garde que les feuilles de calcul.
+                if ($fichier !== null && str_contains($fichier, 'worksheets/') && $zip->locateName($fichier) !== false) {
+                    $feuilles[] = ['nom' => (string) $classeur->getAttribute('name'), 'fichier' => $fichier];
+                }
+            }
+            $classeur->close();
+        }
+
+        if ($feuilles !== []) {
+            return $feuilles;
+        }
+
+        $fichiers = [];
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $nom = (string) $zip->getNameIndex($i);
             if (preg_match('#^xl/worksheets/sheet(\d+)\.xml$#', $nom, $m) === 1) {
-                $feuilles[(int) $m[1]] = $nom;
+                $fichiers[(int) $m[1]] = $nom;
             }
         }
-        if ($feuilles === []) {
-            return null;
+        ksort($fichiers);
+        foreach (array_values($fichiers) as $rang => $fichier) {
+            $feuilles[] = ['nom' => 'Feuille ' . ($rang + 1), 'fichier' => $fichier];
         }
-        ksort($feuilles);
 
-        return reset($feuilles);
+        return $feuilles;
     }
 
     /**
@@ -196,22 +286,28 @@ final class LecteurTableur
      * @param string $feuille
      * @param array<int, string> $textes
      * @param int $maxLignes
-     * @return array{lignes: array<int, array<int, string>>, tronque: bool}
+     * @param int $aPartirDe
+     * @return array{lignes: array<int, array<int, string>>, numeros: array<int, int>, tronque: bool}
      */
-    private function lireFeuille(ZipArchive $zip, string $feuille, array $textes, int $maxLignes): array
+    private function lireFeuille(ZipArchive $zip, string $feuille, array $textes, int $maxLignes, int $aPartirDe): array
     {
         $xml = $this->ouvrir($zip, $feuille);
 
         $lignes = [];
+        $numeros = [];
         $tronque = false;
         $ligne = null;
         $colonne = 0;
+        $numero = 0;
 
         while ($xml->read()) {
             if ($xml->nodeType === XMLReader::ELEMENT && $xml->localName === 'row') {
+                // Le numéro est celui du tableur (attribut r) ; sans lui, on compte.
+                $declare = (int) $xml->getAttribute('r');
+                $numero = $declare > 0 ? $declare : $numero + 1;
                 $ligne = [];
                 $colonne = 0;
-                if ($xml->isEmptyElement) {
+                if ($xml->isEmptyElement || $numero < $aPartirDe) {
                     $ligne = null;
                 }
 
@@ -250,11 +346,12 @@ final class LecteurTableur
                     break;
                 }
                 $lignes[] = $complete;
+                $numeros[] = $numero;
             }
         }
         $xml->close();
 
-        return ['lignes' => $lignes, 'tronque' => $tronque];
+        return ['lignes' => $lignes, 'numeros' => $numeros, 'tronque' => $tronque];
     }
 
     /**

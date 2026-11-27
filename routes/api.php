@@ -272,3 +272,8 @@ Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
     Route::post('imports-fournitures/{import}/appliquer', [\App\Http\Controllers\ImportFournituresApplicationController::class, 'appliquer'])->whereNumber('import');
     Route::get('fournitures/export', \App\Http\Controllers\ExportFournituresController::class);
 });
+
+// Tâche 3.6 bis, lot F3c : relire un import avec une autre feuille ou une autre ligne d'en-tête.
+Route::middleware(['auth:sanctum', 'require.mfa'])->group(function () {
+    Route::put('imports-fournitures/{import}/lecture', [\App\Http\Controllers\ImportFournituresController::class, 'lecture'])->whereNumber('import');
+});
